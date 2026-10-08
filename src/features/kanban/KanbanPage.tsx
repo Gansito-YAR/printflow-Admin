@@ -7,6 +7,7 @@ import { STATUS_LABEL } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { urgencyOf } from "../../utils/dates";
 import { EmptyState, ErrorPanel, SelectField, Spinner, TextField } from "../../components/ui";
+import { FilterBar } from "../../components/FilterBar";
 import { ErrorBoundary } from "../../components/ErrorBoundary";
 import { PaymentModal } from "../pos/PaymentModal";
 import { ConnectionIndicator } from "./ConnectionIndicator";
@@ -35,6 +36,8 @@ export function KanbanPage() {
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>("ALL");
   const [showDelivered, setShowDelivered] = useState(false);
   const [paying, setPaying] = useState<OrderSummary | null>(null);
+  // Celular (RSP-11): un carril a la vez, elegido con pestañas.
+  const [mobileLane, setMobileLane] = useState<OrderStatus>("IN_PRODUCTION");
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -60,24 +63,35 @@ export function KanbanPage() {
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 md:gap-4">
         <div>
-          <h1 className="text-xl font-bold text-ink-strong">Tablero de producción</h1>
+          <h1 className="text-lg font-bold text-ink-strong md:text-xl">Tablero de producción</h1>
           <p className="text-sm text-ink-muted">Ordenado por fecha pactada de entrega.</p>
         </div>
         <div className="flex items-center gap-4">
           <ConnectionIndicator status={rtStatus} onReconnect={reconnect} />
           <Link
             to="/pedidos/nuevo"
-            className="rounded-md border-2 border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-ink"
+            className="hidden min-h-10 items-center rounded-md border-2 border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-ink md:inline-flex"
           >
             + Nuevo pedido
           </Link>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4 rounded-md border border-line bg-surface-0 p-3">
-        <div className="w-72">
+      {/* Celular: acción principal flotante */}
+      <Link
+        to="/pedidos/nuevo"
+        aria-label="Nuevo pedido"
+        className="fixed bottom-4 right-4 z-30 flex h-14 items-center gap-2 rounded-full border-2 border-primary bg-primary px-5 text-sm font-bold text-primary-ink shadow-[var(--shadow-2)] md:hidden"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+        data-testid="fab-new-order"
+      >
+        + Nuevo pedido
+      </Link>
+
+      <FilterBar active={(search.trim() ? 1 : 0) + (urgencyFilter !== "ALL" ? 1 : 0)}>
+        <div className="lg:w-72!">
           <TextField
             label="Buscar"
             placeholder="Folio, cliente o teléfono"
@@ -86,7 +100,7 @@ export function KanbanPage() {
             data-testid="input-search-orders"
           />
         </div>
-        <div className="w-56">
+        <div>
           <SelectField
             label="Fecha pactada"
             value={urgencyFilter}
@@ -97,7 +111,7 @@ export function KanbanPage() {
             <option value="TOMORROW">Vencen mañana</option>
           </SelectField>
         </div>
-      </div>
+      </FilterBar>
 
       {error && <ErrorPanel message={error} onRetry={() => void reload()} />}
 
@@ -113,7 +127,31 @@ export function KanbanPage() {
           </Link>
         </EmptyState>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-4 gap-4 overflow-x-auto" style={{ minWidth: 4 * 248 }}>
+        <>
+        {/* Celular: pestañas por estado con contador */}
+        <div role="tablist" aria-label="Estados" className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3 md:hidden">
+          {LANES.map((status) => {
+            const n = byLane.get(status)?.length ?? 0;
+            const active = status === mobileLane;
+            return (
+              <button
+                key={status}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setMobileLane(status)}
+                className={`min-h-11 shrink-0 rounded-full border-2 px-4 text-sm font-semibold ${
+                  active ? "border-primary bg-primary text-primary-ink" : "border-line bg-surface-0 text-ink-strong"
+                }`}
+                data-testid={`lane-tab-${status}`}
+              >
+                {STATUS_LABEL[status]} <span className="tabular">({n})</span>
+              </button>
+            );
+          })}
+        </div>
+        {/* Celular: un carril. Tablet: carriles deslizables. Escritorio: 4 columnas. */}
+        <div className="flex min-h-0 flex-1 gap-4 md:snap-x md:snap-mandatory md:overflow-x-auto lg:grid lg:min-w-[992px] lg:grid-cols-4 lg:overflow-visible">
           {LANES.map((status) => {
             const lane = byLane.get(status) ?? [];
             const collapsed = status === "DELIVERED" && !showDelivered;
@@ -123,7 +161,9 @@ export function KanbanPage() {
               <section
                 key={status}
                 aria-label={STATUS_LABEL[status]}
-                className="flex min-h-0 min-w-[248px] flex-col rounded-md bg-surface-2"
+                className={`min-h-0 w-full shrink-0 flex-col rounded-md bg-surface-2 md:flex md:w-[46%] md:snap-start lg:w-auto lg:min-w-[248px] ${
+                  status === mobileLane ? "flex" : "hidden"
+                }`}
               >
                 <header className="flex items-center justify-between px-3 py-2">
                   <h2 className="text-sm font-bold text-ink-strong">{STATUS_LABEL[status]}</h2>
@@ -156,6 +196,7 @@ export function KanbanPage() {
             );
           })}
         </div>
+        </>
       )}
 
       {paying && (

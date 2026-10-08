@@ -62,8 +62,8 @@ export function CostingSection({ orderId, timezone }: { orderId: string; timezon
   }
 
   return (
-    <section className="rounded-md border border-line bg-surface-0 p-6" aria-label="Costos y utilidad">
-      <div className="flex items-center justify-between">
+    <section className="rounded-md border border-line bg-surface-0 p-4 md:p-6" aria-label="Costos y utilidad">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-bold text-ink-strong">Costos y utilidad</h2>
         <Button variant="secondary" onClick={toggle} aria-expanded={open} data-testid="toggle-costing">
           {open ? "Ocultar" : "Mostrar (confidencial)"}
@@ -82,7 +82,7 @@ export function CostingSection({ orderId, timezone }: { orderId: string; timezon
                   ? "ESTIMADO con los costos vigentes. Se congela al iniciar producción."
                   : `CONGELADO el ${formatDateTime(costing.frozen_at, timezone)}. Cambios de precio de insumos ya no lo afectan.`}
               </p>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
                 <div className="flex flex-col gap-3">
                   {costing.lines.map((l) => (
                     <div key={l.line_no} className="rounded-md border border-line p-3 text-sm tabular">

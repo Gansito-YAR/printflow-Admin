@@ -17,6 +17,7 @@ import { formatMoney } from "../../utils/money";
 import { fromDateTimeLocal, toDateTimeLocal } from "../../utils/dates";
 import { Button, ErrorPanel, Spinner, TextAreaField, TextField } from "../../components/ui";
 import { CustomerPicker } from "./CustomerPicker";
+import { StickyActions } from "../../components/StickyActions";
 import { EstimatePanel } from "./CostingSection";
 
 interface Row {
@@ -157,7 +158,7 @@ export function NewOrderPage() {
   const canSubmit = Boolean(customer && items && quote && promised && !quoting);
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-5xl flex-col gap-6" data-testid="new-order-form">
+    <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-5xl flex-col gap-4 md:gap-6" data-testid="new-order-form">
       <div>
         <h1 className="text-xl font-bold text-ink-strong">Nuevo pedido</h1>
         <p className="text-sm text-ink-muted">
@@ -165,12 +166,12 @@ export function NewOrderPage() {
         </p>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-6">
+      <section className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-4 md:p-6">
         <h2 className="font-bold text-ink-strong">1. Cliente</h2>
         <CustomerPicker value={customer} onChange={setCustomer} disabled={submitting} />
       </section>
 
-      <section className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-6">
+      <section className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-4 md:p-6">
         <h2 className="font-bold text-ink-strong">2. Partidas</h2>
         {productsError && <ErrorPanel message={productsError} />}
         <div className="flex flex-col gap-3">
@@ -180,16 +181,16 @@ export function NewOrderPage() {
             return (
               <div
                 key={row.key}
-                className="grid grid-cols-12 items-end gap-3 rounded-md border border-line p-3"
+                className="grid grid-cols-6 items-end gap-2 rounded-md border border-line p-3 md:grid-cols-12 md:gap-3"
                 data-testid="order-row"
               >
-                <label className="col-span-5 flex flex-col gap-1 text-sm font-semibold text-ink-strong">
+                <label className="order-1 col-span-5 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
                   Producto
                   <select
                     value={row.productId}
                     onChange={(e) => updateRow(row.key, { productId: e.target.value })}
                     disabled={submitting}
-                    className="min-h-10 rounded-md border border-line bg-surface-0 px-3 font-normal"
+                    className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
                   >
                     <option value="">Seleccione…</option>
                     {[...byCategory.entries()].map(([cat, list]) => (
@@ -203,43 +204,43 @@ export function NewOrderPage() {
                     ))}
                   </select>
                 </label>
-                <label className="col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong">
+                <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
                   Cantidad
                   <input
                     inputMode="decimal"
                     value={row.quantity}
                     onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
                     disabled={submitting}
-                    className="min-h-10 rounded-md border border-line bg-surface-0 px-3 font-normal"
+                    className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
                   />
                 </label>
                 {product?.pricing_unit === "M2" ? (
                   <>
-                    <label className="col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong">
+                    <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
                       Ancho (m)
                       <input
                         inputMode="decimal"
                         value={row.width}
                         onChange={(e) => updateRow(row.key, { width: e.target.value })}
                         disabled={submitting}
-                        className="min-h-10 rounded-md border border-line bg-surface-0 px-3 font-normal"
+                        className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
                       />
                     </label>
-                    <label className="col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong">
+                    <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
                       Alto (m)
                       <input
                         inputMode="decimal"
                         value={row.height}
                         onChange={(e) => updateRow(row.key, { height: e.target.value })}
                         disabled={submitting}
-                        className="min-h-10 rounded-md border border-line bg-surface-0 px-3 font-normal"
+                        className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
                       />
                     </label>
                   </>
                 ) : (
-                  <div className="col-span-4" />
+                  <div className="order-3 col-span-4 hidden md:order-none md:block" />
                 )}
-                <div className="col-span-1 flex justify-end">
+                <div className="order-2 col-span-1 flex justify-end md:order-none">
                   <Button
                     variant="ghost"
                     onClick={() => setRows((prev) => (prev.length > 1 ? prev.filter((r) => r.key !== row.key) : prev))}
@@ -250,7 +251,7 @@ export function NewOrderPage() {
                   </Button>
                 </div>
                 {line && (
-                  <p className="col-span-12 text-xs text-ink-muted tabular">
+                  <p className="order-4 col-span-6 text-xs text-ink-muted tabular md:order-none md:col-span-12">
                     {line.description} · {TIER_LABEL[line.applied_tier]} · {formatMoney(line.unit_price)} ×{" "}
                     {line.billable_qty} {UNIT_LABEL[line.pricing_unit]} ={" "}
                     <strong className="text-ink-strong">{formatMoney(line.line_total)}</strong>
@@ -267,7 +268,7 @@ export function NewOrderPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-6 rounded-md border border-line bg-surface-0 p-6">
+      <section className="grid grid-cols-1 gap-4 rounded-md border border-line bg-surface-0 p-4 md:grid-cols-2 md:gap-6 md:p-6">
         <div className="flex flex-col gap-4">
           <h2 className="font-bold text-ink-strong">3. Entrega</h2>
           <TextField
@@ -323,7 +324,15 @@ export function NewOrderPage() {
 
       {submitError && <ErrorPanel message={submitError} />}
 
-      <div className="flex justify-end gap-3 pb-6">
+      <StickyActions
+        summary={
+          quote ? (
+            <span className="tabular lg:hidden">
+              Total <strong className="text-lg text-ink-strong">{formatMoney(quote.total)}</strong>
+            </span>
+          ) : null
+        }
+      >
         <Button variant="secondary" onClick={() => navigate("/")} disabled={submitting}>
           Cancelar
         </Button>
@@ -336,7 +345,7 @@ export function NewOrderPage() {
         >
           Crear pedido
         </Button>
-      </div>
+      </StickyActions>
     </form>
   );
 }

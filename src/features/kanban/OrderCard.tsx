@@ -69,7 +69,7 @@ export function OrderCard({
           {(!delivered || onCredit) && !paid && (
             <Button
               variant="primary"
-              className="min-h-8 px-3 py-1 text-xs"
+              className="px-3 py-1 text-xs md:min-h-8"
               onClick={() => onRegisterPayment(order)}
               data-testid="button-register-payment"
             >
@@ -78,7 +78,7 @@ export function OrderCard({
           )}
           <Link
             to={`/pedidos/${order.folio}`}
-            className="text-xs font-semibold text-brand-accent underline underline-offset-2"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent underline underline-offset-2 md:min-h-0 md:text-xs"
           >
             Ver detalle
           </Link>

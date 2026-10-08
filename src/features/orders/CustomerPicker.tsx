@@ -45,7 +45,7 @@ export function CustomerPicker({
 
   if (value) {
     return (
-      <div className="flex items-center justify-between rounded-md border-2 border-line-strong bg-surface-0 p-4">
+      <div className="flex flex-col gap-3 rounded-md border-2 border-line-strong bg-surface-0 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-semibold text-ink-strong">{value.full_name}</p>
           <p className="text-sm text-ink-muted">
@@ -61,7 +61,7 @@ export function CustomerPicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
         <div className="flex-1">
           <TextField
             label="Buscar cliente"
@@ -88,7 +88,7 @@ export function CustomerPicker({
               <button
                 type="button"
                 onClick={() => onChange(c)}
-                className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-surface-2"
+                className="flex min-h-11 w-full flex-col items-start justify-between gap-0.5 px-4 py-2 text-left hover:bg-surface-2 sm:flex-row sm:items-center"
               >
                 <span className="font-semibold text-ink-strong">{c.full_name}</span>
                 <span className="text-sm text-ink-muted">

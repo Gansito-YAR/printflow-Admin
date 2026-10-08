@@ -15,6 +15,8 @@ import { Button, EmptyState, ErrorPanel, Spinner, StatusBadge } from "../../comp
 import { PaymentModal } from "../pos/PaymentModal";
 import { RemissionButton } from "../pdf/RemissionButton";
 import { AdvancedActions } from "../supervisor/AdvancedActions";
+import { DataList } from "../../components/DataList";
+import { StickyActions } from "../../components/StickyActions";
 import { CostingSection } from "./CostingSection";
 
 const NEXT: Partial<Record<OrderStatus, "IN_PRODUCTION" | "READY_FOR_DELIVERY">> = {
@@ -83,16 +85,16 @@ export function OrderDetailPage() {
   const closed = (order.status === "DELIVERED" && !order.delivery_override) || order.status === "CANCELLED";
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link to="/" className="text-sm text-brand-accent underline">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-6 md:gap-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
+        <div className="min-w-0">
+          <Link to="/" className="inline-flex min-h-11 items-center text-sm text-brand-accent underline md:min-h-0">
             ← Tablero
           </Link>
-          <h1 className="mt-1 flex items-center gap-3 text-xl font-bold text-ink-strong">
+          <h1 className="mt-1 flex flex-wrap items-center gap-2 text-xl font-bold text-ink-strong md:gap-3">
             {order.folio} <StatusBadge status={order.status} />
           </h1>
-          <p className="text-sm text-ink-muted">
+          <p className="break-words text-sm text-ink-muted">
             {order.customer?.full_name} · {order.customer?.phone_number}
             {order.customer && ` · Tarifa ${TIER_LABEL[order.customer.pricing_tier]}`}
           </p>
@@ -108,22 +110,22 @@ export function OrderDetailPage() {
           {onCredit && isZero(order.balance_due) && (
             <p className="text-sm font-semibold text-cleared-ink">Entregado con crédito: adeudo liquidado.</p>
           )}
-          <a href="#bitacora" className="text-sm font-semibold text-brand-accent underline">
+          <a href="#bitacora" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent underline md:min-h-0">
             Ver bitácora del pedido ↓
           </a>
         </div>
-        <div className="flex flex-col items-end gap-1 tabular">
-          <span className="text-sm text-ink-muted">Total {formatMoney(order.total_price)}</span>
-          <span className="text-sm font-semibold text-ink-strong">Saldo</span>
+        <div className="flex items-center justify-between gap-1 rounded-md border border-line bg-surface-0 p-3 tabular md:flex-col md:items-end md:border-0 md:bg-transparent md:p-0">
+          <span className="text-sm text-ink-muted md:order-first">Total {formatMoney(order.total_price)}</span>
+          <span className="hidden text-sm font-semibold text-ink-strong md:inline">Saldo</span>
           <span className="text-3xl font-bold text-ink-strong" data-testid="detail-balance">
             {formatMoney(order.balance_due)}
           </span>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-3">
         {!closed && !isZero(order.balance_due) && (
-          <Button onClick={() => setPaying(true)} data-testid="button-open-payment">
+          <Button onClick={() => setPaying(true)} className="hidden lg:inline-flex" data-testid="button-open-payment">
             Registrar abono
           </Button>
         )}
@@ -141,37 +143,38 @@ export function OrderDetailPage() {
         </p>
       )}
 
-      <section className="rounded-md border border-line bg-surface-0 p-6">
+      <section className="rounded-md border border-line bg-surface-0 p-4 md:p-6">
         <h2 className="mb-3 font-bold text-ink-strong">Partidas</h2>
-        <table className="w-full text-sm tabular">
-          <thead className="text-left text-ink-muted">
-            <tr>
-              <th className="py-1">Descripción</th>
-              <th className="py-1 text-right">Cantidad</th>
-              <th className="py-1 text-right">P. unitario</th>
-              <th className="py-1 text-right">Importe</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.items.map((it) => (
-              <tr key={it.line_no} className="border-t border-line">
-                <td className="py-2">
-                  {it.description} <span className="text-xs text-ink-muted">({TIER_LABEL[it.applied_tier]})</span>
-                </td>
-                <td className="py-2 text-right">
-                  {itemQuantityLabel(it)}
-                </td>
-                <td className="py-2 text-right">{formatMoney(it.unit_price)}</td>
-                <td className="py-2 text-right font-semibold">{formatMoney(it.line_total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataList
+          label="Partidas"
+          rows={order.items}
+          rowKey={(it) => String(it.line_no)}
+          columns={[
+            {
+              key: "desc",
+              header: "Descripción",
+              primary: true,
+              render: (it) => (
+                <>
+                  {it.description} <span className="text-xs font-normal text-ink-muted">({TIER_LABEL[it.applied_tier]})</span>
+                </>
+              ),
+            },
+            { key: "qty", header: "Cantidad", align: "right", render: (it) => itemQuantityLabel(it) },
+            { key: "price", header: "P. unitario", align: "right", render: (it) => formatMoney(it.unit_price) },
+            {
+              key: "total",
+              header: "Importe",
+              align: "right",
+              render: (it) => <span className="font-semibold">{formatMoney(it.line_total)}</span>,
+            },
+          ]}
+        />
         {order.notes && <p className="mt-3 text-sm text-ink-base">Notas: {order.notes}</p>}
       </section>
 
       <div>
-        <section className="rounded-md border border-line bg-surface-0 p-6">
+        <section className="rounded-md border border-line bg-surface-0 p-4 md:p-6">
           <h2 className="mb-3 font-bold text-ink-strong">Abonos</h2>
           {order.payments.length === 0 ? (
             <p className="text-sm text-ink-muted">Sin abonos.</p>
@@ -192,10 +195,10 @@ export function OrderDetailPage() {
 
       </div>
 
-      <section id="bitacora" aria-label="Bitácora del pedido" className="scroll-mt-4 rounded-md border-2 border-line-strong bg-surface-0 p-6">
-        <div className="mb-1 flex items-baseline justify-between">
+      <section id="bitacora" aria-label="Bitácora del pedido" className="scroll-mt-4 rounded-md border-2 border-line-strong bg-surface-0 p-4 md:p-6">
+        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg font-bold text-ink-strong">Bitácora del pedido</h2>
-          <Link to="/bitacora" className="text-sm font-semibold text-brand-accent underline">
+          <Link to="/bitacora" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent underline md:min-h-0">
             Ver bitácora general
           </Link>
         </div>
@@ -204,7 +207,7 @@ export function OrderDetailPage() {
         </p>
         <ol className="flex flex-col gap-2 text-sm" data-testid="order-log">
           {order.events.map((ev) => (
-            <li key={ev.id} className="grid grid-cols-[11rem_1fr] gap-3 border-b border-line pb-2">
+            <li key={ev.id} className="grid grid-cols-1 gap-1 border-b border-line pb-2 md:grid-cols-[11rem_1fr] md:gap-3">
               <span className="tabular text-xs text-ink-muted">
                 {formatDateTime(ev.created_at, timezone)}
                 <span className="block">{ev.actor?.full_name ?? "Sistema"}</span>
@@ -243,6 +246,22 @@ export function OrderDetailPage() {
       <CostingSection key={`${order.id}-${order.status}`} orderId={order.id} timezone={timezone} />
 
       <AdvancedActions order={order} timezone={timezone} onDone={() => void load()} />
+
+      {!closed && !isZero(order.balance_due) && (
+        <div className="lg:hidden">
+          <StickyActions
+            summary={
+              <span className="tabular">
+                Saldo <strong className="text-lg text-ink-strong">{formatMoney(order.balance_due)}</strong>
+              </span>
+            }
+          >
+            <Button onClick={() => setPaying(true)} data-testid="button-open-payment-mobile">
+              Registrar abono
+            </Button>
+          </StickyActions>
+        </div>
+      )}
 
       {paying && (
         <PaymentModal
