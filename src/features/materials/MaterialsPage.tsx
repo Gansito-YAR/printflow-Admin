@@ -314,8 +314,8 @@ function MaterialForm({
       )}
       {material && (
         <>
-          <label className="flex items-center gap-2 text-sm text-ink-strong">
-            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />
+          <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
+            <input type="checkbox" className="h-5 w-5 shrink-0" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />
             Insumo activo (un insumo inactivo no se puede agregar a recetas nuevas)
           </label>
           <div>

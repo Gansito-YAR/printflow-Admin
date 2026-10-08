@@ -205,8 +205,8 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
           disabled={saving}
         />
       </div>
-      <label className="flex items-center gap-2 text-sm text-ink-strong">
-        <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />
+      <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
+        <input type="checkbox" className="h-5 w-5 shrink-0" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />
         Producto activo (visible al capturar pedidos)
       </label>
       {error && (

@@ -92,7 +92,7 @@ export function KanbanPage() {
 
       <FilterBar active={(search.trim() ? 1 : 0) + (urgencyFilter !== "ALL" ? 1 : 0)}>
         <div className="lg:w-72!">
-          <TextField
+          <TextField enterKeyHint="search" autoComplete="off"
             label="Buscar"
             placeholder="Folio, cliente o teléfono"
             value={search}

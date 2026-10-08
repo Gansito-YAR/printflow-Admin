@@ -49,7 +49,7 @@ export function CustomersPage() {
         <Button onClick={() => setEditing("new")}>+ Cliente nuevo</Button>
       </div>
       <div className="w-full sm:w-80">
-        <TextField label="Buscar" placeholder="Nombre o teléfono" value={term} onChange={(e) => setTerm(e.target.value)} />
+        <TextField enterKeyHint="search" autoComplete="off" label="Buscar" placeholder="Nombre o teléfono" value={term} onChange={(e) => setTerm(e.target.value)} />
       </div>
       {error && <ErrorPanel message={error} onRetry={() => setVersion((v) => v + 1)} />}
       {loading ? (

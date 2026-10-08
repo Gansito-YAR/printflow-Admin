@@ -63,7 +63,7 @@ export function CustomerPicker({
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
         <div className="flex-1">
-          <TextField
+          <TextField enterKeyHint="search" autoComplete="off"
             label="Buscar cliente"
             placeholder="Nombre o teléfono (mínimo 2 caracteres)"
             value={term}

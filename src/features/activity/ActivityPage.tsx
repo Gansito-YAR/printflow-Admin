@@ -114,7 +114,7 @@ export function ActivityPage() {
           </SelectField>
         </div>
         <div>
-          <TextField label="Folio o nombre" placeholder="PF-… / Lona…" value={term} onChange={(e) => reset(setTerm)(e.target.value)} />
+          <TextField enterKeyHint="search" autoComplete="off" autoCapitalize="characters" label="Folio o nombre" placeholder="PF-… / Lona…" value={term} onChange={(e) => reset(setTerm)(e.target.value)} />
         </div>
         <div>
           <TextField label="Desde" type="date" value={from} onChange={(e) => reset(setFrom)(e.target.value)} />

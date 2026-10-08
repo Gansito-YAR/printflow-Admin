@@ -69,7 +69,7 @@ export function OrderHistoryPage() {
       </div>
       <FilterBar active={[term.trim(), status !== "ALL", from, to].filter(Boolean).length}>
         <div>
-          <TextField label="Folio" placeholder="PF-…" value={term} onChange={(e) => resetPage(setTerm)(e.target.value)} />
+          <TextField enterKeyHint="search" autoComplete="off" autoCapitalize="characters" label="Folio" placeholder="PF-…" value={term} onChange={(e) => resetPage(setTerm)(e.target.value)} />
         </div>
         <div>
           <SelectField label="Estado" value={status} onChange={(e) => resetPage(setStatus)(e.target.value as OrderStatus | "ALL")}>

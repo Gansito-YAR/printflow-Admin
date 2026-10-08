@@ -39,12 +39,12 @@ export function SettingsPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-2xl flex-col gap-6" data-testid="settings-form">
+    <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-2xl flex-col gap-4 md:gap-6" data-testid="settings-form">
       <div>
         <h1 className="text-xl font-bold text-ink-strong">Configuración</h1>
         <p className="text-sm text-ink-muted">Reglas del negocio que aplica la base de datos a todos los pedidos.</p>
       </div>
-      <section className="flex flex-col gap-4 rounded-md border border-line bg-surface-0 p-6">
+      <section className="flex flex-col gap-4 rounded-md border border-line bg-surface-0 p-4 md:p-6">
         <TextField
           label="Anticipo mínimo para iniciar producción (%)"
           inputMode="decimal"
@@ -67,7 +67,7 @@ export function SettingsPage() {
           ))}
         </SelectField>
         <label className="flex items-start gap-2 text-sm text-ink-strong">
-          <input type="checkbox" className="mt-1" checked={negative} onChange={(e) => setNegative(e.target.checked)} disabled={saving} />
+          <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={negative} onChange={(e) => setNegative(e.target.checked)} disabled={saving} />
           <span>
             Permitir producir aunque el inventario quede en negativo
             <span className="block text-xs text-ink-muted">
@@ -82,8 +82,8 @@ export function SettingsPage() {
           [!] {error}
         </p>
       )}
-      <div className="flex justify-end">
-        <Button type="submit" loading={saving}>
+      <div className="flex md:justify-end">
+        <Button type="submit" loading={saving} className="w-full md:w-auto">
           Guardar configuración
         </Button>
       </div>

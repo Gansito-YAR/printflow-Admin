@@ -11,6 +11,10 @@ npm run dev            # http://localhost:5174
 npm test && npm run typecheck && npm run build
 ```
 
+Para probar en un teléfono de la misma red: `npm run dev:lan` y abrir en el teléfono la dirección "Network" que imprime Vite (p. ej. `http://192.168.1.20:5174`).
+
+El panel es responsive: celular (< 768 px), tablet (768–1023 px) y escritorio (≥ 1024 px). Ver `MD/Plan_Responsive_Panel.md`.
+
 Solo entra un perfil ADMIN activo. Las cuentas se crean en el dashboard de Supabase.
 
 ## Reglas

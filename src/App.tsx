@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/auth";
@@ -18,8 +18,23 @@ import { ProfitPage } from "./features/reports/ProfitPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { ActivityPage } from "./features/activity/ActivityPage";
 
+/** true en pantallas de escritorio (≥ 1024 px). */
+function useIsDesktop() {
+  const query = "(min-width: 1024px)";
+  const [desktop, setDesktop] = useState(() => window.matchMedia?.(query).matches ?? true);
+  useEffect(() => {
+    const mql = window.matchMedia?.(query);
+    if (!mql) return;
+    const on = (e: MediaQueryListEvent) => setDesktop(e.matches);
+    mql.addEventListener("change", on);
+    return () => mql.removeEventListener("change", on);
+  }, []);
+  return desktop;
+}
+
 export default function App() {
   const init = useAuthStore((s) => s.init);
+  const desktop = useIsDesktop();
   useEffect(() => init(), [init]);
 
   return (
@@ -49,7 +64,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+      <Toaster position={desktop ? "top-right" : "top-center"} toastOptions={{ duration: 4000 }} />
     </ErrorBoundary>
   );
 }
