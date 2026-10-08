@@ -15,6 +15,7 @@ import {
 import type { OrderStatus } from "../lib/types";
 import { STATUS_LABEL } from "../lib/types";
 import { URGENCY_LABEL, type Urgency } from "../utils/dates";
+import { lockScroll } from "../utils/scrollLock";
 
 // ----- Spinner ---------------------------------------------------------------
 
@@ -62,7 +63,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:border-line disabled:bg-disabled disabled:text-disabled-ink ${VARIANT[variant]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold md:min-h-10 transition disabled:cursor-not-allowed disabled:border-line disabled:bg-disabled disabled:text-disabled-ink ${VARIANT[variant]} ${className}`}
       {...rest}
     >
       {loading ? <Spinner label={loadingLabel ?? "Procesando…"} /> : children}
@@ -107,7 +108,7 @@ export function FieldShell({ label, error, hint, required, children }: FieldShel
 }
 
 const CONTROL =
-  "min-h-10 rounded-md border bg-surface-0 px-3 py-2 text-sm text-ink-strong outline-none " +
+  "min-h-11 w-full rounded-md border bg-surface-0 px-3 py-2 text-base text-ink-strong outline-none md:min-h-10 md:text-sm " +
   "focus:border-line-strong disabled:bg-surface-2 disabled:text-ink-muted";
 
 function controlClass(invalid: boolean) {
@@ -209,6 +210,9 @@ export function Modal({ title, onClose, locked = false, children, footer, testId
     return () => previous?.focus();
   }, []);
 
+  // El cuerpo no se desplaza detrás del modal (importante en celular).
+  useEffect(() => lockScroll(), []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !locked) onClose();
@@ -220,7 +224,7 @@ export function Modal({ title, onClose, locked = false, children, footer, testId
   // Portal a <body>: un modal con formulario nunca queda anidado dentro de otro
   // <form> (HTML no admite formularios anidados y el envío se va al de afuera).
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4">
       <div
         aria-hidden
         className="absolute inset-0 bg-[var(--overlay-backdrop)] opacity-50"
@@ -232,10 +236,10 @@ export function Modal({ title, onClose, locked = false, children, footer, testId
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid={testId}
-        className="relative flex max-h-[85vh] w-full max-w-[648px] flex-col rounded-md border-2 border-line-strong bg-surface-0 shadow-[var(--shadow-2)]"
+        className="safe-bottom relative flex max-h-[92dvh] w-full flex-col rounded-t-xl border-2 border-b-0 border-line-strong bg-surface-0 shadow-[var(--shadow-2)] md:max-h-[85vh] md:max-w-[648px] md:rounded-md md:border-b-2"
       >
-        <header className="flex items-center justify-between border-b border-line px-8 py-4">
-          <h2 id={titleId} className="text-lg font-bold text-ink-strong">
+        <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3 md:px-8 md:py-4">
+          <h2 id={titleId} className="text-base font-bold text-ink-strong md:text-lg">
             {title}
           </h2>
           <button
@@ -243,14 +247,14 @@ export function Modal({ title, onClose, locked = false, children, footer, testId
             onClick={onClose}
             disabled={locked}
             aria-label="Cerrar"
-            className="rounded px-2 text-xl text-ink-muted hover:text-ink-strong disabled:opacity-40"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-2xl text-ink-muted hover:text-ink-strong disabled:opacity-40 md:h-auto md:w-auto md:px-2 md:text-xl"
           >
             ×
           </button>
         </header>
-        <div className="overflow-y-auto px-8 py-6">{children}</div>
+        <div className="overflow-y-auto px-4 py-4 md:px-8 md:py-6">{children}</div>
         {footer && (
-          <footer className="flex justify-end gap-3 border-t border-line px-8 py-4">{footer}</footer>
+          <footer className="flex flex-col-reverse gap-2 border-t border-line px-4 py-3 md:flex-row md:justify-end md:gap-3 md:px-8 md:py-4">{footer}</footer>
         )}
       </div>
     </div>,

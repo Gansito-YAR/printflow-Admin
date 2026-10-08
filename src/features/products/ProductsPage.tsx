@@ -214,7 +214,7 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
           [!] {error}
         </p>
       )}
-      <div className="flex justify-end gap-3">
+      <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-3">
         <Button variant="secondary" onClick={onCancel} disabled={saving}>
           Cancelar
         </Button>

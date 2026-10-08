@@ -36,12 +36,19 @@ export function AdvancedActions({
 }) {
   const [action, setAction] = useState<Action | null>(null);
   const closed = order.status === "DELIVERED" || order.status === "CANCELLED";
+  // RSP-07: el motivo de un botón deshabilitado se muestra como texto (no hay "hover" en celular).
+  const forceHint =
+    order.status !== "READY_FOR_DELIVERY"
+      ? "Forzar entrega solo aplica a pedidos listos para entrega."
+      : isZero(order.balance_due)
+        ? "El pedido está liquidado: lo entrega el instalador escaneando el QR."
+        : null;
 
   return (
-    <section className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-6" aria-label="Acciones avanzadas">
+    <section className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-4 md:p-6" aria-label="Acciones avanzadas">
       <h2 className="font-bold text-ink-strong">Acciones avanzadas</h2>
       <p className="text-xs text-ink-muted">Requieren confirmar su contraseña y un motivo. Quedan en la bitácora.</p>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-3">
         <Button variant="secondary" onClick={() => setAction("reschedule")} disabled={closed}>
           Reprogramar fecha
         </Button>
@@ -55,18 +62,17 @@ export function AdvancedActions({
           variant="danger"
           onClick={() => setAction("force")}
           disabled={order.status !== "READY_FOR_DELIVERY" || isZero(order.balance_due)}
-          title={
-            order.status !== "READY_FOR_DELIVERY"
-              ? "Solo aplica a pedidos listos para entrega."
-              : isZero(order.balance_due)
-                ? "El pedido está liquidado: lo entrega el instalador escaneando el QR."
-                : undefined
-          }
+          aria-describedby={forceHint ? "force-hint" : undefined}
           data-testid="button-force-delivery"
         >
           Forzar entrega (cliente con crédito)
         </Button>
       </div>
+      {forceHint && (
+        <p id="force-hint" className="text-xs text-ink-muted">
+          {forceHint}
+        </p>
+      )}
       <p className="text-xs text-ink-muted">
         Forzar entrega es la única forma de entregar con saldo pendiente: el saldo queda por cobrar y la autorización
         queda en la bitácora con su motivo.
@@ -245,7 +251,7 @@ function ActionModal({
               [!] {error}
             </p>
           )}
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-3">
             <Button variant="secondary" onClick={onClose} disabled={saving}>
               Volver
             </Button>

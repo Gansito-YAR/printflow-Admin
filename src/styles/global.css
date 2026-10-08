@@ -104,3 +104,23 @@ body {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ----- Responsive (Plan RSP-08) ------------------------------------------- */
+
+/* Mientras hay un cajón o una ventana abierta, la página de fondo no se desplaza. */
+body.scroll-locked {
+  overflow: hidden;
+}
+
+/* Respeta la barra de inicio del iPhone en elementos pegados abajo. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Desplazamiento horizontal sin barra visible (pestañas, carriles). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -210,7 +210,7 @@ function ExtraCostModal({ orderId, onClose, onDone }: { orderId: string; onClose
             [!] {error}
           </p>
         )}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
@@ -255,7 +255,7 @@ function VoidModal({ extra, onClose, onDone }: { extra: { id: string; concept: s
             [!] {error}
           </p>
         )}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Volver
           </Button>
