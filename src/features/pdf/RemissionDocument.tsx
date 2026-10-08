@@ -52,12 +52,19 @@ const s = StyleSheet.create({
   balanceValue: { fontSize: 18, fontFamily: "Helvetica-Bold", color: pdfTheme.danger },
   notes: { marginTop: 12 },
   payments: { marginTop: 10, width: 330 },
-  qrBlock: { position: "absolute", bottom: 12 * MM + 12, right: 12 * MM, width: QR_BOX, alignItems: "center" },
+  qrBlock: { position: "absolute", bottom: 12 * MM + 6, right: 12 * MM, width: QR_BOX + 8, alignItems: "center" },
   qr: { width: QR_BOX, height: QR_BOX },
   qrCaption: { fontSize: 7.5, color: pdfTheme.inkMuted, marginTop: 2, textAlign: "center" },
+  qrCode: { fontSize: 7, fontFamily: "Courier", color: pdfTheme.ink, textAlign: "center" },
   disclaimer: { position: "absolute", bottom: 12 * MM - 4, left: 12 * MM, right: 12 * MM, fontSize: 7.5, color: pdfTheme.inkFaint },
   pageNo: { position: "absolute", top: 6 * MM, right: 12 * MM, fontSize: 7, color: pdfTheme.inkMuted },
 });
+
+/** El código (UUID) en dos líneas legibles, cortando en un guion: "94c86068-b5eb-468c-" / "baa1-b5c879fef5d5". */
+export function qrCodeLines(code: string): [string, string] {
+  const cut = code.indexOf("-", 14);
+  return cut > 0 ? [code.slice(0, cut + 1), code.slice(cut + 1)] : [code, ""];
+}
 
 export function RemissionDocument({
   order,
@@ -166,6 +173,9 @@ export function RemissionDocument({
               <>
                 <Image src={qrDataUrl} style={s.qr} />
                 <Text style={s.qrCaption}>Escanee para verificar la entrega</Text>
+                {/* Respaldo si la cámara no lee: el instalador escribe este código en la app. */}
+                <Text style={s.qrCode}>{qrCodeLines(order.qr_code_hash)[0]}</Text>
+                <Text style={s.qrCode}>{qrCodeLines(order.qr_code_hash)[1]}</Text>
               </>
             ) : null;
           }}

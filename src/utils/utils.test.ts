@@ -4,6 +4,7 @@ import { fromDateTimeLocal, toDateTimeLocal, urgencyOf } from "./dates";
 import { toAppError } from "../lib/errors";
 import { normalizePhone } from "../features/customers/CustomerForm";
 import { derivePaid } from "../features/pdf/RemissionButton";
+import { qrCodeLines } from "../features/pdf/RemissionDocument";
 
 const TZ = "America/Mexico_City";
 
@@ -92,5 +93,15 @@ describe("quantity (insumos)", () => {
     expect(formatQty("20.0000")).toBe("20");
     expect(isNegative("-0.5")).toBe(true);
     expect(isNegative("0.0000")).toBe(false);
+  });
+});
+
+describe("remisión: código bajo el QR", () => {
+  it("parte el UUID en dos líneas sin perder caracteres", () => {
+    const code = "94c86068-b5eb-468c-baa1-b5c879fef5d5";
+    const [a, b] = qrCodeLines(code);
+    expect(a).toBe("94c86068-b5eb-468c-");
+    expect(b).toBe("baa1-b5c879fef5d5");
+    expect(a + b).toBe(code);
   });
 });
