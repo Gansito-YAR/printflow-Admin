@@ -4,9 +4,14 @@
 export const pdfTheme = {
   ink: "#111111",
   inkMuted: "#555555",
+  inkFaint: "#8A8A8A",
   line: "#CCCCCC",
   brand: "#F89A16",
   surface: "#F5F5F5",
+  /** Saldo pendiente: rojo con contraste AA sobre blanco. */
+  danger: "#B42318",
+  dangerSoft: "#FEF3F2",
+  cleared: "#067647",
 } as const;
 
 /** Margen carta de 12 mm expresado en puntos (1 mm = 2.8346 pt). */

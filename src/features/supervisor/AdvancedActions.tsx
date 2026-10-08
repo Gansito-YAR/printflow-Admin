@@ -1,11 +1,13 @@
 // Acciones avanzadas (SRS Fase 3 §6, Spec-Kit §3.4). Requieren reautenticar.
 // Toda acción exige motivo y queda en la bitácora del pedido.
-// "Forzar entrega" NO existe (ARQ-03): se muestra deshabilitada y explicada.
+// "Autorizar entrega con saldo" (BRD §6 Actor 1, SRS Fase 3 §6.3): además de la
+// contraseña de esta pantalla, el SERVIDOR exige un login de menos de 5 minutos.
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { rpc } from "../../lib/rpc";
 import { toAppError } from "../../lib/errors";
+import { formatMoney, isZero } from "../../utils/money";
 import type { OrderDetail } from "../../lib/types";
 import { fromDateTimeLocal, toDateTimeLocal } from "../../utils/dates";
 import { fetchOrderConsumption, type ConsumedMaterial } from "../../lib/queries";
@@ -14,12 +16,13 @@ import { compareQty, formatQty, parseQuantity } from "../../utils/quantity";
 import { Button, Modal, TextAreaField, TextField } from "../../components/ui";
 import { ReauthForm } from "../auth/ReauthForm";
 
-type Action = "reschedule" | "override" | "cancel";
+type Action = "reschedule" | "override" | "cancel" | "force";
 
 const ACTION_TITLE: Record<Action, string> = {
   reschedule: "Reprogramar fecha pactada",
   override: "Iniciar producción sin anticipo",
   cancel: "Cancelar pedido",
+  force: "Autorizar entrega con saldo pendiente",
 };
 
 export function AdvancedActions({
@@ -48,12 +51,25 @@ export function AdvancedActions({
         <Button variant="danger" onClick={() => setAction("cancel")} disabled={closed}>
           Cancelar pedido
         </Button>
-        <Button variant="secondary" disabled title="La entrega solo se confirma con saldo $0.00 escaneando el QR.">
-          Forzar entrega (no disponible)
+        <Button
+          variant="danger"
+          onClick={() => setAction("force")}
+          disabled={order.status !== "READY_FOR_DELIVERY" || isZero(order.balance_due)}
+          title={
+            order.status !== "READY_FOR_DELIVERY"
+              ? "Solo aplica a pedidos listos para entrega."
+              : isZero(order.balance_due)
+                ? "El pedido está liquidado: lo entrega el instalador escaneando el QR."
+                : undefined
+          }
+          data-testid="button-force-delivery"
+        >
+          Forzar entrega (cliente con crédito)
         </Button>
       </div>
       <p className="text-xs text-ink-muted">
-        Forzar entrega no existe por diseño: ningún pedido se entrega con saldo pendiente.
+        Forzar entrega es la única forma de entregar con saldo pendiente: el saldo queda por cobrar y la autorización
+        queda en la bitácora con su motivo.
       </p>
       {action && (
         <ActionModal
@@ -123,6 +139,7 @@ function ActionModal({
     try {
       if (action === "reschedule" && iso) await rpc.rescheduleOrder(order.id, iso, reason.trim());
       if (action === "override") await rpc.startProductionOverride(order.id, reason.trim());
+      if (action === "force") await rpc.forceDelivery(order.id, reason.trim());
       if (action === "cancel") {
         const list: { raw_material_id: string; qty: string }[] = [];
         for (const c of consumed) {
@@ -138,7 +155,14 @@ function ActionModal({
       toast.success("Acción registrada.");
       onDone();
     } catch (err) {
-      setError(err instanceof Error && err.name === "Error" ? err.message : toAppError(err).userText);
+      if (err instanceof Error && err.name === "Error") {
+        setError(err.message);
+      } else {
+        const appError = toAppError(err);
+        // La autorización se venció (más de 5 min desde la contraseña): pedirla de nuevo.
+        if (appError.code === "PF_REAUTH_REQUIRED") setVerified(false);
+        setError(appError.userText);
+      }
       inFlight.current = false;
       setSaving(false);
     }
@@ -147,7 +171,19 @@ function ActionModal({
   return (
     <Modal title={`${ACTION_TITLE[action]} · ${order.folio}`} onClose={onClose} locked={saving}>
       {!verified ? (
-        <ReauthForm onConfirmed={() => setVerified(true)} />
+        <>
+          {error && (
+            <p role="alert" className="mb-3 text-sm font-semibold text-blocked-ink">
+              [!] {error}
+            </p>
+          )}
+          <ReauthForm
+            onConfirmed={() => {
+              setError(null);
+              setVerified(true);
+            }}
+          />
+        </>
       ) : (
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
           {action === "reschedule" && (
@@ -165,6 +201,19 @@ function ActionModal({
             <p className="rounded-md border-2 border-blocked-line bg-blocked p-3 text-sm text-blocked-ink">
               Cancelar es definitivo. Los abonos registrados se conservan en el historial.
             </p>
+          )}
+          {action === "force" && (
+            <div
+              className="flex flex-col gap-1 rounded-md border-2 border-blocked-line bg-blocked p-3 text-sm text-blocked-ink"
+              data-testid="force-warning"
+            >
+              <p className="font-bold">Esta acción entrega el pedido sin cobrar el saldo.</p>
+              <p>
+                Saldo que queda por cobrar: <strong className="tabular">{formatMoney(order.balance_due)}</strong>. El
+                pedido pasa a &quot;Entregado&quot; y el adeudo seguirá visible en el tablero hasta que se liquide. No se
+                puede deshacer.
+              </p>
+            </div>
           )}
           {action === "cancel" && consumed.length > 0 && (
             <fieldset className="flex flex-col gap-2 rounded-md border border-line p-3" data-testid="returns-fieldset">
@@ -200,7 +249,7 @@ function ActionModal({
             <Button variant="secondary" onClick={onClose} disabled={saving}>
               Volver
             </Button>
-            <Button type="submit" variant={action === "cancel" ? "danger" : "primary"} loading={saving}>
+            <Button type="submit" variant={action === "cancel" || action === "force" ? "danger" : "primary"} loading={saving}>
               Confirmar
             </Button>
           </div>

@@ -59,7 +59,7 @@ export function RemissionButton({ order, timezone }: { order: OrderDetail; timez
           paid={paid}
           qrDataUrl={qrDataUrl}
           timezone={timezone}
-          logoSrc={`${window.location.origin}/brand/logo-full.png`}
+          logoSrc={`${window.location.origin}/brand/logo-pdf.png`}
         />,
       ).toBlob();
       const url = URL.createObjectURL(blob);

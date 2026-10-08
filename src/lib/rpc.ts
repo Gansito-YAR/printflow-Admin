@@ -90,6 +90,14 @@ export const rpc = {
     });
   },
 
+  /** Entrega con saldo (cliente con crédito). El servidor exige haber reautenticado hace < 5 min. */
+  forceDelivery(orderId: string, reason: string) {
+    return call<{ status: OrderStatus; balance_due: Money }>("force_delivery", {
+      p_order_id: orderId,
+      p_reason: reason,
+    });
+  },
+
   // ----- Módulo 4 (costos, inventario y mermas) -----
   upsertMaterial(m: {
     id?: string;

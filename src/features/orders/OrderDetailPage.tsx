@@ -79,7 +79,8 @@ export function OrderDetailPage() {
     );
 
   const next = NEXT[order.status];
-  const closed = order.status === "DELIVERED" || order.status === "CANCELLED";
+  const onCredit = order.status === "DELIVERED" && order.delivery_override;
+  const closed = (order.status === "DELIVERED" && !order.delivery_override) || order.status === "CANCELLED";
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-6">
@@ -99,6 +100,17 @@ export function OrderDetailPage() {
           {order.production_override && (
             <p className="text-sm font-semibold text-warning-ink">Producción autorizada sin anticipo.</p>
           )}
+          {onCredit && !isZero(order.balance_due) && (
+            <p className="text-sm font-bold text-blocked-ink" data-testid="credit-banner">
+              [!] Entregado con adeudo (cliente con crédito): saldo por cobrar {formatMoney(order.balance_due)}.
+            </p>
+          )}
+          {onCredit && isZero(order.balance_due) && (
+            <p className="text-sm font-semibold text-cleared-ink">Entregado con crédito: adeudo liquidado.</p>
+          )}
+          <a href="#bitacora" className="text-sm font-semibold text-brand-accent underline">
+            Ver bitácora del pedido ↓
+          </a>
         </div>
         <div className="flex flex-col items-end gap-1 tabular">
           <span className="text-sm text-ink-muted">Total {formatMoney(order.total_price)}</span>
@@ -158,7 +170,7 @@ export function OrderDetailPage() {
         {order.notes && <p className="mt-3 text-sm text-ink-base">Notas: {order.notes}</p>}
       </section>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div>
         <section className="rounded-md border border-line bg-surface-0 p-6">
           <h2 className="mb-3 font-bold text-ink-strong">Abonos</h2>
           {order.payments.length === 0 ? (
@@ -178,17 +190,34 @@ export function OrderDetailPage() {
           )}
         </section>
 
-        <section className="rounded-md border border-line bg-surface-0 p-6">
-          <h2 className="mb-3 font-bold text-ink-strong">Bitácora</h2>
-          <ol className="flex flex-col gap-2 text-sm">
-            {order.events.map((ev) => (
-              <li key={ev.id} className="border-b border-line pb-2">
+      </div>
+
+      <section id="bitacora" aria-label="Bitácora del pedido" className="scroll-mt-4 rounded-md border-2 border-line-strong bg-surface-0 p-6">
+        <div className="mb-1 flex items-baseline justify-between">
+          <h2 className="text-lg font-bold text-ink-strong">Bitácora del pedido</h2>
+          <Link to="/bitacora" className="text-sm font-semibold text-brand-accent underline">
+            Ver bitácora general
+          </Link>
+        </div>
+        <p className="mb-3 text-xs text-ink-muted">
+          Todo lo que se hizo con este pedido: quién, cuándo y por qué. No se puede editar ni borrar.
+        </p>
+        <ol className="flex flex-col gap-2 text-sm" data-testid="order-log">
+          {order.events.map((ev) => (
+            <li key={ev.id} className="grid grid-cols-[11rem_1fr] gap-3 border-b border-line pb-2">
+              <span className="tabular text-xs text-ink-muted">
+                {formatDateTime(ev.created_at, timezone)}
+                <span className="block">{ev.actor?.full_name ?? "Sistema"}</span>
+              </span>
+              <span>
                 <span className="font-semibold text-ink-strong">{EVENT_LABEL[ev.event_type]}</span>
                 {ev.event_type === "PAYMENT_REGISTERED" ? (
                   <span className="tabular text-ink-base">
                     {" "}
                     · {formatMoney(ev.amount)} · saldo restante {formatMoney(ev.to_value)}
                   </span>
+                ) : ev.event_type === "DELIVERY_OVERRIDE" ? (
+                  <span className="tabular text-ink-base"> · saldo por cobrar {formatMoney(ev.amount)}</span>
                 ) : COST_EVENTS.has(ev.event_type) ? (
                   ev.to_value && ev.event_type !== "MATERIALS_RETURNED" && <span className="text-ink-base"> · {ev.to_value}</span>
                 ) : (
@@ -196,22 +225,20 @@ export function OrderDetailPage() {
                     {(ev.from_value || ev.to_value) && (
                       <span className="text-ink-base">
                         {" "}
-                        {ev.from_value ? `${eventValue(ev.from_value)} → ` : "→ "}
-                        {eventValue(ev.to_value)}
+                        {ev.event_type === "PROMISED_DATE_CHANGED"
+                          ? `${formatDateTime(ev.from_value, timezone)} → ${formatDateTime(ev.to_value, timezone)}`
+                          : `${ev.from_value ? `${eventValue(ev.from_value)} → ` : "→ "}${eventValue(ev.to_value)}`}
                       </span>
                     )}
                     {ev.amount && <span className="tabular"> · {formatMoney(ev.amount)}</span>}
                   </>
                 )}
                 {ev.reason && <span className="block text-ink-base">Motivo: {ev.reason}</span>}
-                <span className="block text-xs text-ink-muted">
-                  {formatDateTime(ev.created_at, timezone)} · {ev.actor?.full_name ?? "Sistema"}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </div>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <CostingSection key={`${order.id}-${order.status}`} orderId={order.id} timezone={timezone} />
 

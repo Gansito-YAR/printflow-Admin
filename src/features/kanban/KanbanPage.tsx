@@ -117,6 +117,8 @@ export function KanbanPage() {
           {LANES.map((status) => {
             const lane = byLane.get(status) ?? [];
             const collapsed = status === "DELIVERED" && !showDelivered;
+            // Aunque el carril de entregados esté colapsado, los adeudos nunca se esconden.
+            const shown = collapsed ? lane.filter((o) => o.delivery_override && o.balance_due !== "0.00") : lane;
             return (
               <section
                 key={status}
@@ -138,20 +140,16 @@ export function KanbanPage() {
                         {collapsed ? "Mostrar entregados (últimos 7 días)" : "Ocultar entregados"}
                       </button>
                     )}
-                    {!collapsed &&
-                      (lane.length === 0 ? (
-                        <EmptyState>[EMPTY] Sin pedidos en este estado</EmptyState>
-                      ) : (
-                        lane.map((order) => (
-                          <OrderCard
-                            key={order.id}
-                            order={order}
-                            timezone={timezone}
-                            now={now}
-                            onRegisterPayment={setPaying}
-                          />
-                        ))
-                      ))}
+                    {!collapsed && lane.length === 0 && <EmptyState>[EMPTY] Sin pedidos en este estado</EmptyState>}
+                    {shown.map((order) => (
+                      <OrderCard
+                        key={order.id}
+                        order={order}
+                        timezone={timezone}
+                        now={now}
+                        onRegisterPayment={setPaying}
+                      />
+                    ))}
                   </div>
                 </ErrorBoundary>
               </section>

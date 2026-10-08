@@ -16,6 +16,7 @@ import { OrderHistoryPage } from "./features/orders/OrderHistoryPage";
 import { MaterialsPage } from "./features/materials/MaterialsPage";
 import { ProfitPage } from "./features/reports/ProfitPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
+import { ActivityPage } from "./features/activity/ActivityPage";
 
 export default function App() {
   const init = useAuthStore((s) => s.init);
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="productos" element={<ProductsPage />} />
             <Route path="insumos" element={<MaterialsPage />} />
             <Route path="utilidad" element={<ProfitPage />} />
+            <Route path="bitacora" element={<ActivityPage />} />
             <Route path="usuarios" element={<UsersPage />} />
             <Route path="configuracion" element={<SettingsPage />} />
           </Route>

@@ -1,4 +1,4 @@
-// Historial de pedidos: todos los estados, incluidos cancelados y entregados
+// Pedidos: listado completo de todos los estados, incluidos cancelados y entregados
 // antiguos que el tablero ya no muestra.
 
 import { useEffect, useState } from "react";
@@ -62,8 +62,8 @@ export function OrderHistoryPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold text-ink-strong">Historial de pedidos</h1>
-        <p className="text-sm text-ink-muted">Todos los pedidos, ordenados del más reciente al más antiguo.</p>
+        <h1 className="text-xl font-bold text-ink-strong">Pedidos</h1>
+        <p className="text-sm text-ink-muted">Todos los pedidos de todos los estados, del más reciente al más antiguo.</p>
       </div>
       <div className="flex flex-wrap items-end gap-4 rounded-md border border-line bg-surface-0 p-3">
         <div className="w-48">

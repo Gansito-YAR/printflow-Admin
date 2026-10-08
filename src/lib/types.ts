@@ -30,7 +30,9 @@ export type OrderEventType =
   | "COSTS_FROZEN"
   | "EXTRA_COST_ADDED"
   | "EXTRA_COST_VOIDED"
-  | "MATERIALS_RETURNED";
+  | "MATERIALS_RETURNED"
+  | "DELIVERY_OVERRIDE"
+  | "RECIPE_CHANGED";
 
 /** Eventos cuyo monto es un costo (confidencial): la bitácora no lo muestra. */
 export const COST_EVENTS: ReadonlySet<OrderEventType> = new Set([
@@ -86,6 +88,8 @@ export interface OrderSummary {
   promised_date: string;
   total_price: Money;
   balance_due: Money;
+  /** true = entregado con saldo, autorizado por un ADMIN (cliente con crédito). */
+  delivery_override: boolean;
   customer: { full_name: string; phone_number: string } | null;
   items: { description: string; line_no: number }[];
 }
@@ -142,6 +146,7 @@ export interface OrderDetail {
   notes: string | null;
   qr_code_hash: string;
   production_override: boolean;
+  delivery_override: boolean;
   created_at: string;
   delivered_at: string | null;
   customer: Pick<Customer, "id" | "full_name" | "phone_number" | "pricing_tier"> | null;
@@ -240,6 +245,8 @@ export const EVENT_LABEL: Record<OrderEventType, string> = {
   EXTRA_COST_ADDED: "Gasto extra registrado",
   EXTRA_COST_VOIDED: "Gasto extra anulado",
   MATERIALS_RETURNED: "Material reintegrado al inventario",
+  DELIVERY_OVERRIDE: "Entrega autorizada con saldo pendiente",
+  RECIPE_CHANGED: "Receta modificada",
 };
 
 // ----- Módulo 4: costos, inventario y mermas (CONFIDENCIAL: solo ADMIN) -----

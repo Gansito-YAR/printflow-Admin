@@ -10,11 +10,12 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 const NAV = [
   { to: "/", label: "Tablero", end: true },
   { to: "/pedidos/nuevo", label: "Nuevo pedido", end: true },
-  { to: "/pedidos", label: "Historial", end: true },
+  { to: "/pedidos", label: "Pedidos", end: true },
   { to: "/clientes", label: "Clientes", end: false },
   { to: "/productos", label: "Productos y recetas", end: false },
   { to: "/insumos", label: "Insumos", end: false },
   { to: "/utilidad", label: "Utilidad y mermas", end: false },
+  { to: "/bitacora", label: "Bitácora", end: false },
   { to: "/usuarios", label: "Usuarios", end: false },
   { to: "/configuracion", label: "Configuración", end: false },
 ];

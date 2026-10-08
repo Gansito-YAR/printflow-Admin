@@ -17,12 +17,12 @@ import type {
 } from "./types";
 
 export const ORDER_SUMMARY_SELECT =
-  "id, folio, status, promised_date, total_price::text, balance_due::text, " +
+  "id, folio, status, promised_date, total_price::text, balance_due::text, delivery_override, " +
   "customer:customers(full_name, phone_number), items:order_items(description, line_no)";
 
 const ORDER_DETAIL_SELECT =
   "id, folio, status, promised_date, total_price::text, balance_due::text, notes, " +
-  "qr_code_hash, production_override, created_at, delivered_at, " +
+  "qr_code_hash, production_override, delivery_override, created_at, delivered_at, " +
   "customer:customers(id, full_name, phone_number, pricing_tier), " +
   "items:order_items(line_no, description, pricing_unit, quantity::text, billable_qty::text, width_m::text, " +
   "height_m::text, applied_tier, unit_price::text, line_total::text), " +
@@ -48,7 +48,8 @@ export async function fetchKanbanOrders(): Promise<OrderSummary[]> {
     .from("orders")
     .select(ORDER_SUMMARY_SELECT)
     .neq("status", "CANCELLED")
-    .or(`status.neq.DELIVERED,delivered_at.gte.${since}`)
+    // Entregados de la última semana, y SIEMPRE los entregados con crédito mientras deban.
+    .or(`status.neq.DELIVERED,delivered_at.gte.${since},and(delivery_override.eq.true,balance_due.gt.0)`)
     .order("promised_date", { ascending: true });
   return unwrap<OrderSummary[]>(result);
 }

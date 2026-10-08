@@ -14,6 +14,7 @@ export type ErrorCode =
   | "PF_BALANCE_DUE"
   | "PF_ALREADY_DELIVERED"
   | "PF_REASON_REQUIRED"
+  | "PF_REAUTH_REQUIRED"
   | "PF_INVALID_INPUT"
   | "DUPLICATE"
   | "NETWORK"
@@ -29,6 +30,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   PF_BALANCE_DUE: "El pedido tiene saldo pendiente.",
   PF_ALREADY_DELIVERED: "La entrega ya había sido registrada.",
   PF_REASON_REQUIRED: "El motivo es obligatorio.",
+  PF_REAUTH_REQUIRED: "Confirme su contraseña nuevamente para continuar.",
   PF_INVALID_INPUT: "Revise los datos capturados.",
   DUPLICATE: "Ya existe un registro con esos datos.",
   NETWORK: "Sin conexión con el servidor.",
