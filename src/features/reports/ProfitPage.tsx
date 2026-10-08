@@ -66,7 +66,12 @@ export function ProfitPage() {
     setLoading(true);
     setError(null);
     try {
-      if (tab === "PROFIT") setReport(await rpc.getProfitReport(from, to, basis, group));
+      if (tab === "PROFIT") {
+        const r = await rpc.getProfitReport(from, to, basis, group);
+        // Mes: cronológico (la llave es AAAA-MM). Lo demás: alfabético por nombre.
+        if (group !== "MONTH") r.rows.sort((a, b) => a.label.localeCompare(b.label, "es"));
+        setReport(r);
+      }
       else setWaste(await rpc.getWasteReport(from, to));
     } catch (err) {
       setError(toAppError(err).userText);

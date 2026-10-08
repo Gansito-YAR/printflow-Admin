@@ -95,11 +95,22 @@ export interface OrderItem {
   description: string;
   pricing_unit: PricingUnit;
   quantity: string;
+  /** m² cobrados (cantidad × ancho × alto) o piezas. */
+  billable_qty: string;
   width_m: string | null;
   height_m: string | null;
   applied_tier: PricingTier;
   unit_price: Money;
   line_total: Money;
+}
+
+/** "6 m²" o "6 m² (2 piezas)" para M2; "3 piezas" para UNIT. */
+export function itemQuantityLabel(it: Pick<OrderItem, "pricing_unit" | "quantity" | "billable_qty">): string {
+  const trim = (v: string) => (v.includes(".") ? v.replace(/\.?0+$/, "") : v);
+  const pieces = trim(it.quantity);
+  const piecesLabel = `${pieces} ${pieces === "1" ? "pieza" : "piezas"}`;
+  if (it.pricing_unit === "M2") return pieces === "1" ? `${trim(it.billable_qty)} m²` : `${trim(it.billable_qty)} m² (${piecesLabel})`;
+  return piecesLabel;
 }
 
 export interface Payment {

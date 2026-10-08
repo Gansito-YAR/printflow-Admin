@@ -7,7 +7,7 @@ import { fetchOrderDetail } from "../../lib/queries";
 import { rpc } from "../../lib/rpc";
 import { toAppError } from "../../lib/errors";
 import type { OrderDetail, OrderStatus } from "../../lib/types";
-import { COST_EVENTS, EVENT_LABEL, METHOD_LABEL, STATUS_LABEL, TIER_LABEL, UNIT_LABEL } from "../../lib/types";
+import { COST_EVENTS, EVENT_LABEL, itemQuantityLabel, METHOD_LABEL, STATUS_LABEL, TIER_LABEL } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatMoney, isZero } from "../../utils/money";
 import { formatDateLong, formatDateTime } from "../../utils/dates";
@@ -147,7 +147,7 @@ export function OrderDetailPage() {
                   {it.description} <span className="text-xs text-ink-muted">({TIER_LABEL[it.applied_tier]})</span>
                 </td>
                 <td className="py-2 text-right">
-                  {it.quantity} {UNIT_LABEL[it.pricing_unit]}
+                  {itemQuantityLabel(it)}
                 </td>
                 <td className="py-2 text-right">{formatMoney(it.unit_price)}</td>
                 <td className="py-2 text-right font-semibold">{formatMoney(it.line_total)}</td>
@@ -184,13 +184,25 @@ export function OrderDetailPage() {
             {order.events.map((ev) => (
               <li key={ev.id} className="border-b border-line pb-2">
                 <span className="font-semibold text-ink-strong">{EVENT_LABEL[ev.event_type]}</span>
-                {(ev.from_value || ev.to_value) && (
-                  <span className="text-ink-base">
+                {ev.event_type === "PAYMENT_REGISTERED" ? (
+                  <span className="tabular text-ink-base">
                     {" "}
-                    {eventValue(ev.from_value)} → {eventValue(ev.to_value)}
+                    · {formatMoney(ev.amount)} · saldo restante {formatMoney(ev.to_value)}
                   </span>
+                ) : COST_EVENTS.has(ev.event_type) ? (
+                  ev.to_value && ev.event_type !== "MATERIALS_RETURNED" && <span className="text-ink-base"> · {ev.to_value}</span>
+                ) : (
+                  <>
+                    {(ev.from_value || ev.to_value) && (
+                      <span className="text-ink-base">
+                        {" "}
+                        {ev.from_value ? `${eventValue(ev.from_value)} → ` : "→ "}
+                        {eventValue(ev.to_value)}
+                      </span>
+                    )}
+                    {ev.amount && <span className="tabular"> · {formatMoney(ev.amount)}</span>}
+                  </>
                 )}
-                {ev.amount && !COST_EVENTS.has(ev.event_type) && <span className="tabular"> · {formatMoney(ev.amount)}</span>}
                 {ev.reason && <span className="block text-ink-base">Motivo: {ev.reason}</span>}
                 <span className="block text-xs text-ink-muted">
                   {formatDateTime(ev.created_at, timezone)} · {ev.actor?.full_name ?? "Sistema"}

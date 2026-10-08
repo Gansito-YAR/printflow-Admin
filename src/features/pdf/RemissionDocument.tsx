@@ -4,7 +4,7 @@
 
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { OrderDetail } from "../../lib/types";
-import { METHOD_LABEL, UNIT_LABEL } from "../../lib/types";
+import { METHOD_LABEL, itemQuantityLabel } from "../../lib/types";
 import { formatMoney } from "../../utils/money";
 import { formatDateLong, formatDateTime } from "../../utils/dates";
 import { MM, pdfTheme } from "./pdfTheme";
@@ -94,7 +94,7 @@ export function RemissionDocument({
           <View key={it.line_no} style={s.row} wrap={false}>
             <Text style={s.cDesc}>{it.description}</Text>
             <Text style={s.cQty}>
-              {it.quantity} {UNIT_LABEL[it.pricing_unit]}
+              {itemQuantityLabel(it)}
             </Text>
             <Text style={s.cPrice}>{formatMoney(it.unit_price)}</Text>
             <Text style={s.cTotal}>{formatMoney(it.line_total)}</Text>

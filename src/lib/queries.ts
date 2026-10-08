@@ -24,7 +24,7 @@ const ORDER_DETAIL_SELECT =
   "id, folio, status, promised_date, total_price::text, balance_due::text, notes, " +
   "qr_code_hash, production_override, created_at, delivered_at, " +
   "customer:customers(id, full_name, phone_number, pricing_tier), " +
-  "items:order_items(line_no, description, pricing_unit, quantity::text, width_m::text, " +
+  "items:order_items(line_no, description, pricing_unit, quantity::text, billable_qty::text, width_m::text, " +
   "height_m::text, applied_tier, unit_price::text, line_total::text), " +
   "payments(id, amount::text, payment_method, created_at, registered_by:profiles(full_name)), " +
   "events:order_events(id, event_type, from_value, to_value, amount::text, reason, created_at, " +
