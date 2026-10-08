@@ -12,6 +12,7 @@ import type { Profile } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatDateTime, fromDateTimeLocal } from "../../utils/dates";
 import { Button, EmptyState, ErrorPanel, SelectField, Spinner, TextField } from "../../components/ui";
+import { FilterBar } from "../../components/FilterBar";
 import { CATEGORY_LABEL_ACTIVITY, describe, type ActivityCategory, type ActivityRow } from "./describe";
 
 const PAGE_SIZE = 50;
@@ -91,8 +92,8 @@ export function ActivityPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4 rounded-md border border-line bg-surface-0 p-3">
-        <div className="w-52">
+      <FilterBar active={[category !== "ALL", actor !== "ALL", term.trim(), from, to].filter(Boolean).length}>
+        <div>
           <SelectField label="Tipo" value={category} onChange={(e) => reset(setCategory)(e.target.value as ActivityCategory | "ALL")}>
             <option value="ALL">Todo</option>
             {(Object.keys(CATEGORY_LABEL_ACTIVITY) as ActivityCategory[]).map((c) => (
@@ -102,7 +103,7 @@ export function ActivityPage() {
             ))}
           </SelectField>
         </div>
-        <div className="w-52">
+        <div>
           <SelectField label="Usuario" value={actor} onChange={(e) => reset(setActor)(e.target.value)}>
             <option value="ALL">Todos</option>
             {profiles.map((p) => (
@@ -112,16 +113,16 @@ export function ActivityPage() {
             ))}
           </SelectField>
         </div>
-        <div className="w-48">
+        <div>
           <TextField label="Folio o nombre" placeholder="PF-… / Lona…" value={term} onChange={(e) => reset(setTerm)(e.target.value)} />
         </div>
-        <div className="w-40">
+        <div>
           <TextField label="Desde" type="date" value={from} onChange={(e) => reset(setFrom)(e.target.value)} />
         </div>
-        <div className="w-40">
+        <div>
           <TextField label="Hasta" type="date" value={to} onChange={(e) => reset(setTo)(e.target.value)} />
         </div>
-      </div>
+      </FilterBar>
 
       {error && <ErrorPanel message={error} onRetry={() => setVersion((v) => v + 1)} />}
       {loading ? (
@@ -135,12 +136,12 @@ export function ActivityPage() {
               const d = describe(r, timezone);
               const isOrder = r.category === "PEDIDO" && r.entity;
               return (
-                <li key={r.id} className="grid grid-cols-[11rem_9rem_1fr] gap-3 border-b border-line p-3 last:border-b-0">
+                <li key={r.id} className="grid grid-cols-1 gap-1 border-b border-line p-3 last:border-b-0 md:grid-cols-[11rem_1fr] md:gap-3 lg:grid-cols-[11rem_9rem_1fr]">
                   <span className="tabular text-xs text-ink-muted">
                     {formatDateTime(r.created_at, timezone)}
                     <span className="block">{r.actor_id ? (names.get(r.actor_id) ?? "Usuario") : "Sistema"}</span>
                   </span>
-                  <span className="text-xs font-semibold text-ink-base">
+                  <span className="w-fit rounded-sm bg-surface-2 px-1.5 text-xs font-semibold text-ink-base md:hidden lg:block lg:bg-transparent lg:px-0">
                     {CATEGORY_LABEL_ACTIVITY[r.category] ?? r.category}
                   </span>
                   <span className="text-sm">
@@ -167,11 +168,11 @@ export function ActivityPage() {
               );
             })}
           </ol>
-          <div className="flex items-center justify-between text-sm text-ink-muted">
+          <div className="flex flex-col gap-2 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
             <span>
               {count} registro{count === 1 ? "" : "s"} · página {page + 1} de {pages}
             </span>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <Button variant="secondary" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
                 Anterior
               </Button>

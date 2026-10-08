@@ -6,6 +6,7 @@ import { TIER_LABEL } from "../../lib/types";
 import { searchCustomers } from "../../lib/queries";
 import { toAppError } from "../../lib/errors";
 import { Button, EmptyState, ErrorPanel, Modal, Spinner, TextField } from "../../components/ui";
+import { DataList } from "../../components/DataList";
 import { CustomerForm } from "./CustomerForm";
 
 export function CustomersPage() {
@@ -40,14 +41,14 @@ export function CustomersPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-xl font-bold text-ink-strong">Clientes</h1>
           <p className="text-sm text-ink-muted">Se muestran hasta 50 resultados.</p>
         </div>
         <Button onClick={() => setEditing("new")}>+ Cliente nuevo</Button>
       </div>
-      <div className="w-80">
+      <div className="w-full sm:w-80">
         <TextField label="Buscar" placeholder="Nombre o teléfono" value={term} onChange={(e) => setTerm(e.target.value)} />
       </div>
       {error && <ErrorPanel message={error} onRetry={() => setVersion((v) => v + 1)} />}
@@ -56,32 +57,23 @@ export function CustomersPage() {
       ) : rows.length === 0 ? (
         <EmptyState>Sin clientes.</EmptyState>
       ) : (
-        <table className="w-full rounded-md border border-line bg-surface-0 text-sm">
-          <thead className="text-left text-ink-muted">
-            <tr>
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Teléfono</th>
-              <th className="p-3">Tarifa</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((c) => (
-              <tr key={c.id} className="border-t border-line">
-                <td className="p-3 font-semibold text-ink-strong">{c.full_name}</td>
-                <td className="p-3 tabular">{c.phone_number}</td>
-                <td className="p-3">{TIER_LABEL[c.pricing_tier]}</td>
-                <td className="p-3">{c.is_active ? "Activo" : "Inactivo"}</td>
-                <td className="p-3 text-right">
-                  <Button variant="ghost" onClick={() => setEditing(c)}>
-                    Editar
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataList
+          label="Clientes"
+          testId="customers-table"
+          rows={rows}
+          rowKey={(c) => c.id}
+          columns={[
+            { key: "name", header: "Nombre", primary: true, render: (c) => <span className="font-semibold text-ink-strong">{c.full_name}</span> },
+            { key: "phone", header: "Teléfono", render: (c) => <span className="tabular">{c.phone_number}</span> },
+            { key: "tier", header: "Tarifa", render: (c) => TIER_LABEL[c.pricing_tier] },
+            { key: "active", header: "Estado", render: (c) => (c.is_active ? "Activo" : "Inactivo") },
+          ]}
+          actions={(c) => (
+            <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(c)}>
+              Editar
+            </Button>
+          )}
+        />
       )}
       {editing && (
         <Modal title={editing === "new" ? "Cliente nuevo" : "Editar cliente"} onClose={() => setEditing(null)}>

@@ -12,6 +12,8 @@ import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
 import { formatPct, formatQty, isNegative } from "../../utils/quantity";
 import { Button, EmptyState, ErrorPanel, SelectField, Spinner, TextField } from "../../components/ui";
+import { DataList } from "../../components/DataList";
+import { FilterBar } from "../../components/FilterBar";
 
 const GROUP_LABEL: Record<ReportGroup, string> = {
   ORDER: "Pedido",
@@ -89,14 +91,14 @@ export function ProfitPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-xl font-bold text-ink-strong">Utilidad y mermas</h1>
           <p className="text-sm text-ink-muted">
             Utilidad neta = venta − (costo de producción + gastos extra). Confidencial.
           </p>
         </div>
-        <div className="flex gap-2" role="tablist">
+        <div className="grid grid-cols-2 gap-2 sm:flex" role="tablist">
           <Button variant={tab === "PROFIT" ? "primary" : "secondary"} onClick={() => setTab("PROFIT")} role="tab" aria-selected={tab === "PROFIT"}>
             Utilidad
           </Button>
@@ -106,8 +108,8 @@ export function ProfitPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4 rounded-md border border-line bg-surface-0 p-3">
-        <div className="w-44">
+      <FilterBar active={preset === "CUSTOM" ? 1 : 0}>
+        <div>
           <SelectField
             label="Periodo"
             value={preset}
@@ -123,21 +125,21 @@ export function ProfitPage() {
             <option value="CUSTOM">Personalizado</option>
           </SelectField>
         </div>
-        <div className="w-40">
+        <div>
           <TextField label="Desde" type="date" value={from} onChange={(e) => (setPreset("CUSTOM"), setRange([e.target.value, to]))} />
         </div>
-        <div className="w-40">
+        <div>
           <TextField label="Hasta" type="date" value={to} onChange={(e) => (setPreset("CUSTOM"), setRange([from, e.target.value]))} />
         </div>
         {tab === "PROFIT" && (
           <>
-            <div className="w-48">
+            <div>
               <SelectField label="Fecha de" value={basis} onChange={(e) => setBasis(e.target.value as ReportBasis)}>
                 <option value="DELIVERED">Entrega (vendido)</option>
                 <option value="CREATED">Registro del pedido</option>
               </SelectField>
             </div>
-            <div className="w-40">
+            <div>
               <SelectField label="Agrupar por" value={group} onChange={(e) => setGroup(e.target.value as ReportGroup)}>
                 {(Object.keys(GROUP_LABEL) as ReportGroup[]).map((g) => (
                   <option key={g} value={g}>
@@ -148,14 +150,14 @@ export function ProfitPage() {
             </div>
           </>
         )}
-      </div>
+      </FilterBar>
 
       {error && <ErrorPanel message={error} onRetry={() => void load()} />}
       {loading && <Spinner label="Calculando…" />}
 
       {!loading && tab === "PROFIT" && report && (
         <>
-          <div className="grid grid-cols-5 gap-3 tabular" data-testid="profit-totals">
+          <div className="grid grid-cols-2 gap-3 tabular md:grid-cols-3 lg:grid-cols-5" data-testid="profit-totals">
             {(
               [
                 ["Venta", formatMoney(report.totals.sales)],
@@ -165,9 +167,9 @@ export function ProfitPage() {
                 ["Margen", formatPct(report.totals.margin_pct)],
               ] as const
             ).map(([k, v]) => (
-              <div key={k} className="rounded-md border border-line bg-surface-0 p-4">
+              <div key={k} className={`rounded-md border border-line bg-surface-0 p-3 md:p-4 ${k === "Utilidad neta" ? "col-span-2 md:col-span-1" : ""}`}>
                 <p className="text-xs text-ink-muted">{k}</p>
-                <p className={`text-xl font-bold ${k === "Utilidad neta" && isNegative(report.totals.profit) ? "text-blocked-ink" : "text-ink-strong"}`}>{v}</p>
+                <p className={`text-lg font-bold md:text-xl ${k === "Utilidad neta" && isNegative(report.totals.profit) ? "text-blocked-ink" : "text-ink-strong"}`}>{v}</p>
               </div>
             ))}
           </div>
@@ -182,9 +184,10 @@ export function ProfitPage() {
             </EmptyState>
           ) : (
             <>
-              <div className="flex justify-end">
+              <div className="flex md:justify-end">
                 <Button
                   variant="secondary"
+                  className="w-full md:w-auto"
                   onClick={() =>
                     downloadCsv(
                       `utilidad_${from}_${to}_${group.toLowerCase()}.csv`,
@@ -196,35 +199,38 @@ export function ProfitPage() {
                   Exportar CSV
                 </Button>
               </div>
-              <table className="w-full rounded-md border border-line bg-surface-0 text-sm tabular" data-testid="profit-table">
-                <thead className="text-left text-ink-muted">
-                  <tr>
-                    <th className="p-3">{GROUP_LABEL[group]}</th>
-                    <th className="p-3 text-right">Pedidos</th>
-                    <th className="p-3 text-right">Venta</th>
-                    <th className="p-3 text-right">Costo prod.</th>
-                    <th className="p-3 text-right">Gastos extra</th>
-                    <th className="p-3 text-right">Utilidad</th>
-                    <th className="p-3 text-right">Margen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.rows.map((r) => (
-                    <tr key={r.key} className="border-t border-line">
-                      <td className="p-3">
+              <DataList
+                label="Utilidad"
+                testId="profit-table"
+                rows={report.rows}
+                rowKey={(r) => r.key}
+                columns={[
+                  {
+                    key: "label",
+                    header: GROUP_LABEL[group],
+                    primary: true,
+                    render: (r) => (
+                      <>
                         {label(r.key, r.label)}
                         {r.incomplete_cost && <span className="block text-xs font-semibold text-warning-ink">[!] Costo incompleto</span>}
-                      </td>
-                      <td className="p-3 text-right">{r.orders}</td>
-                      <td className="p-3 text-right">{formatMoney(r.sales)}</td>
-                      <td className="p-3 text-right">{formatMoney(r.production_cost)}</td>
-                      <td className="p-3 text-right">{formatMoney(r.extra_cost)}</td>
-                      <td className={`p-3 text-right font-semibold ${isNegative(r.profit) ? "text-blocked-ink" : "text-ink-strong"}`}>{formatMoney(r.profit)}</td>
-                      <td className="p-3 text-right">{formatPct(r.margin_pct)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </>
+                    ),
+                  },
+                  { key: "orders", header: "Pedidos", align: "right", hideOnMobile: group === "ORDER", render: (r) => r.orders },
+                  { key: "sales", header: "Venta", align: "right", render: (r) => <span className="tabular">{formatMoney(r.sales)}</span> },
+                  { key: "cp", header: "Costo prod.", align: "right", render: (r) => <span className="tabular">{formatMoney(r.production_cost)}</span> },
+                  { key: "extra", header: "Gastos extra", align: "right", render: (r) => <span className="tabular">{formatMoney(r.extra_cost)}</span> },
+                  {
+                    key: "profit",
+                    header: "Utilidad",
+                    align: "right",
+                    render: (r) => (
+                      <span className={`tabular font-semibold ${isNegative(r.profit) ? "text-blocked-ink" : "text-ink-strong"}`}>{formatMoney(r.profit)}</span>
+                    ),
+                  },
+                  { key: "margin", header: "Margen", align: "right", render: (r) => <span className="tabular">{formatPct(r.margin_pct)}</span> },
+                ]}
+              />
               {report.rows.some((r) => r.incomplete_cost) && (
                 <p className="text-xs text-warning-ink">
                   &quot;Costo incompleto&quot;: productos sin receta o pedidos que entraron a producción antes del módulo de
@@ -245,9 +251,10 @@ export function ProfitPage() {
               Merma teórica: la que ya consideran las recetas de los pedidos producidos. Merma real: desperdicio adicional
               registrado. Si la real es alta, conviene revisar el % de merma de las recetas.
             </p>
-            <div className="flex justify-end">
+            <div className="flex md:justify-end">
               <Button
                 variant="secondary"
+                className="w-full md:w-auto"
                 onClick={() =>
                   downloadCsv(
                     `mermas_${from}_${to}.csv`,
@@ -259,28 +266,19 @@ export function ProfitPage() {
                 Exportar CSV
               </Button>
             </div>
-            <table className="w-full rounded-md border border-line bg-surface-0 text-sm tabular" data-testid="waste-table">
-              <thead className="text-left text-ink-muted">
-                <tr>
-                  <th className="p-3">Insumo</th>
-                  <th className="p-3 text-right">Merma teórica</th>
-                  <th className="p-3 text-right">Costo</th>
-                  <th className="p-3 text-right">Merma real</th>
-                  <th className="p-3 text-right">Costo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {waste.map((w) => (
-                  <tr key={w.raw_material_id} className="border-t border-line">
-                    <td className="p-3 font-semibold text-ink-strong">{w.name}</td>
-                    <td className="p-3 text-right">{formatQty(w.theoretical_qty)} {MATERIAL_UNIT_LABEL[w.unit]}</td>
-                    <td className="p-3 text-right">{formatMoney(w.theoretical_cost)}</td>
-                    <td className="p-3 text-right">{formatQty(w.real_qty)} {MATERIAL_UNIT_LABEL[w.unit]}</td>
-                    <td className="p-3 text-right">{formatMoney(w.real_cost)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataList
+              label="Mermas"
+              testId="waste-table"
+              rows={waste}
+              rowKey={(w) => w.raw_material_id}
+              columns={[
+                { key: "name", header: "Insumo", primary: true, render: (w) => <span className="font-semibold text-ink-strong">{w.name}</span> },
+                { key: "tq", header: "Merma teórica", align: "right", render: (w) => <span className="tabular">{formatQty(w.theoretical_qty)} {MATERIAL_UNIT_LABEL[w.unit]}</span> },
+                { key: "tc", header: "Costo teórico", align: "right", render: (w) => <span className="tabular">{formatMoney(w.theoretical_cost)}</span> },
+                { key: "rq", header: "Merma real", align: "right", render: (w) => <span className="tabular">{formatQty(w.real_qty)} {MATERIAL_UNIT_LABEL[w.unit]}</span> },
+                { key: "rc", header: "Costo real", align: "right", render: (w) => <span className="tabular">{formatMoney(w.real_cost)}</span> },
+              ]}
+            />
           </>
         )
       )}

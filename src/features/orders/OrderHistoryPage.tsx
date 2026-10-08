@@ -11,6 +11,8 @@ import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
 import { formatDateTime, fromDateTimeLocal } from "../../utils/dates";
 import { Button, EmptyState, ErrorPanel, SelectField, Spinner, StatusBadge, TextField } from "../../components/ui";
+import { FilterBar } from "../../components/FilterBar";
+import { DataList } from "../../components/DataList";
 import { itemsSummary } from "../kanban/OrderCard";
 
 export function OrderHistoryPage() {
@@ -65,11 +67,11 @@ export function OrderHistoryPage() {
         <h1 className="text-xl font-bold text-ink-strong">Pedidos</h1>
         <p className="text-sm text-ink-muted">Todos los pedidos de todos los estados, del más reciente al más antiguo.</p>
       </div>
-      <div className="flex flex-wrap items-end gap-4 rounded-md border border-line bg-surface-0 p-3">
-        <div className="w-48">
+      <FilterBar active={[term.trim(), status !== "ALL", from, to].filter(Boolean).length}>
+        <div>
           <TextField label="Folio" placeholder="PF-…" value={term} onChange={(e) => resetPage(setTerm)(e.target.value)} />
         </div>
-        <div className="w-52">
+        <div>
           <SelectField label="Estado" value={status} onChange={(e) => resetPage(setStatus)(e.target.value as OrderStatus | "ALL")}>
             <option value="ALL">Todos</option>
             {(Object.keys(STATUS_LABEL) as OrderStatus[]).map((s) => (
@@ -79,13 +81,13 @@ export function OrderHistoryPage() {
             ))}
           </SelectField>
         </div>
-        <div className="w-40">
+        <div>
           <TextField label="Registrado desde" type="date" value={from} onChange={(e) => resetPage(setFrom)(e.target.value)} />
         </div>
-        <div className="w-40">
+        <div>
           <TextField label="Hasta" type="date" value={to} onChange={(e) => resetPage(setTo)(e.target.value)} />
         </div>
-      </div>
+      </FilterBar>
       {error && <ErrorPanel message={error} onRetry={() => setVersion((v) => v + 1)} />}
       {loading ? (
         <Spinner label="Cargando…" />
@@ -93,43 +95,40 @@ export function OrderHistoryPage() {
         <EmptyState>Sin pedidos con estos filtros.</EmptyState>
       ) : (
         <>
-          <table className="w-full rounded-md border border-line bg-surface-0 text-sm" data-testid="history-table">
-            <thead className="text-left text-ink-muted">
-              <tr>
-                <th className="p-3">Folio</th>
-                <th className="p-3">Cliente</th>
-                <th className="p-3">Trabajo</th>
-                <th className="p-3">Estado</th>
-                <th className="p-3">Registrado</th>
-                <th className="p-3 text-right">Total</th>
-                <th className="p-3 text-right">Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((o) => (
-                <tr key={o.id} className="border-t border-line">
-                  <td className="p-3">
-                    <Link to={`/pedidos/${o.folio}`} className="font-semibold text-brand-accent underline">
+          <DataList
+            label="Pedidos"
+            testId="history-table"
+            rows={rows}
+            rowKey={(o) => o.id}
+            columns={[
+              {
+                key: "folio",
+                header: "Folio",
+                primary: true,
+                render: (o) => (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Link to={`/pedidos/${o.folio}`} className="inline-flex min-h-11 items-center font-semibold text-brand-accent underline md:min-h-0">
                       {o.folio}
                     </Link>
-                  </td>
-                  <td className="p-3">{o.customer?.full_name ?? "—"}</td>
-                  <td className="p-3 text-ink-base">{itemsSummary(o.items)}</td>
-                  <td className="p-3">
-                    <StatusBadge status={o.status} />
-                  </td>
-                  <td className="p-3 tabular text-ink-muted">{formatDateTime(o.created_at, timezone)}</td>
-                  <td className="p-3 text-right tabular">{formatMoney(o.total_price)}</td>
-                  <td className="p-3 text-right tabular font-semibold">{formatMoney(o.balance_due)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="flex items-center justify-between text-sm text-ink-muted">
+                    <span className="md:hidden">
+                      <StatusBadge status={o.status} />
+                    </span>
+                  </span>
+                ),
+              },
+              { key: "customer", header: "Cliente", render: (o) => o.customer?.full_name ?? "—" },
+              { key: "work", header: "Trabajo", hideOnTablet: true, render: (o) => <span className="text-ink-base">{itemsSummary(o.items)}</span> },
+              { key: "status", header: "Estado", hideOnMobile: true, render: (o) => <StatusBadge status={o.status} /> },
+              { key: "created", header: "Registrado", render: (o) => <span className="tabular text-ink-muted">{formatDateTime(o.created_at, timezone)}</span> },
+              { key: "total", header: "Total", align: "right", render: (o) => <span className="tabular">{formatMoney(o.total_price)}</span> },
+              { key: "balance", header: "Saldo", align: "right", render: (o) => <span className="tabular font-semibold">{formatMoney(o.balance_due)}</span> },
+            ]}
+          />
+          <div className="flex flex-col gap-2 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
             <span>
               {count} pedido{count === 1 ? "" : "s"} · página {page + 1} de {pages}
             </span>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <Button variant="secondary" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
                 Anterior
               </Button>

@@ -113,14 +113,14 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
             <p className="text-sm font-semibold text-warning-ink">Primero registre insumos en la sección Insumos.</p>
           )}
           {rows.map((r) => (
-            <div key={r.key} className="grid grid-cols-12 items-end gap-2 rounded-md border border-line p-2" data-testid="recipe-row">
-              <label className="col-span-5 flex flex-col gap-1 text-xs font-semibold text-ink-strong">
+            <div key={r.key} className="grid grid-cols-6 items-end gap-2 rounded-md border border-line p-2 sm:grid-cols-12" data-testid="recipe-row">
+              <label className="order-1 col-span-5 flex flex-col gap-1 text-xs font-semibold text-ink-strong sm:order-none">
                 Insumo
                 <select
                   value={r.raw_material_id}
                   onChange={(e) => update(r.key, { raw_material_id: e.target.value })}
                   disabled={saving}
-                  className="min-h-10 rounded-md border border-line bg-surface-0 px-2 text-sm font-normal"
+                  className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-2 text-base font-normal md:min-h-10 md:text-sm"
                 >
                   <option value="">Seleccione…</option>
                   {materials.map((m) => (
@@ -130,27 +130,27 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
                   ))}
                 </select>
               </label>
-              <label className="col-span-3 flex flex-col gap-1 text-xs font-semibold text-ink-strong">
+              <label className="order-3 col-span-3 flex flex-col gap-1 text-xs font-semibold text-ink-strong sm:order-none">
                 Cantidad {unitOf(r.raw_material_id) && `(${unitOf(r.raw_material_id)})`} {per}
                 <input
                   inputMode="decimal"
                   value={r.quantity_required}
                   onChange={(e) => update(r.key, { quantity_required: e.target.value })}
                   disabled={saving}
-                  className="min-h-10 rounded-md border border-line bg-surface-0 px-2 text-sm font-normal"
+                  className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-2 text-base font-normal md:min-h-10 md:text-sm"
                 />
               </label>
-              <label className="col-span-3 flex flex-col gap-1 text-xs font-semibold text-ink-strong">
+              <label className="order-3 col-span-3 flex flex-col gap-1 text-xs font-semibold text-ink-strong sm:order-none">
                 Merma %
                 <input
                   inputMode="decimal"
                   value={r.waste_margin_pct}
                   onChange={(e) => update(r.key, { waste_margin_pct: e.target.value })}
                   disabled={saving}
-                  className="min-h-10 rounded-md border border-line bg-surface-0 px-2 text-sm font-normal"
+                  className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-2 text-base font-normal md:min-h-10 md:text-sm"
                 />
               </label>
-              <div className="col-span-1 flex justify-end">
+              <div className="order-2 col-span-1 flex justify-end sm:order-none">
                 <Button
                   variant="ghost"
                   aria-label="Quitar insumo"
@@ -194,7 +194,7 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
                 <span className="font-semibold text-ink-strong">Costo de producción</span>
                 <span className="text-right font-semibold text-ink-strong">${sim.unit_cost}</span>
               </div>
-              <div className="mt-3 grid grid-cols-4 gap-1 border-t border-line pt-2">
+              <div className="mt-3 grid grid-cols-4 gap-1 border-t border-line pt-2 text-xs sm:text-sm">
                 <span className="text-ink-muted">Precio</span>
                 <span className="text-right text-ink-muted">Venta</span>
                 <span className="text-right text-ink-muted">Utilidad</span>

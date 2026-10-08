@@ -20,7 +20,7 @@ beforeEach(() => restock.mockReset());
 
 it("marca el stock bajo el mínimo", async () => {
   render(<MaterialsPage />);
-  expect(await screen.findByText(/\[!\] 20 m²/)).toBeInTheDocument();
+  expect((await screen.findAllByText(/\[!\] 20 m²/)).length).toBeGreaterThan(0); // tabla y tarjeta
 });
 
 it("reabasto: doble envío = una llamada; reintento tras red usa la misma clave", async () => {
@@ -28,7 +28,7 @@ it("reabasto: doble envío = una llamada; reintento tras red usa la misma clave"
   restock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
   restock.mockResolvedValueOnce({ ...material, current_stock: "30.0000", unit_cost: "12.6667", duplicate: false });
   render(<MaterialsPage />);
-  await user.click(await screen.findByRole("button", { name: "Reabastecer" }));
+  await user.click((await screen.findAllByRole("button", { name: "Reabastecer" }))[0]!);
   fireEvent.change(screen.getByLabelText(/Cantidad comprada/), { target: { value: "10" } });
   fireEvent.change(screen.getByLabelText(/Costo de compra/), { target: { value: "14" } });
   const form = screen.getByTestId("movement-form");

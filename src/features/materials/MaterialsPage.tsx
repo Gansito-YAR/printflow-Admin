@@ -13,6 +13,7 @@ import { useSettingsStore } from "../../store/settings";
 import { compareQty, formatQty, isNegative, parseQuantity } from "../../utils/quantity";
 import { formatDateTime } from "../../utils/dates";
 import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextAreaField, TextField } from "../../components/ui";
+import { DataList } from "../../components/DataList";
 
 type Movement = "restock" | "waste" | "adjust" | "cost";
 
@@ -35,6 +36,8 @@ export function MaterialsPage() {
   const [editing, setEditing] = useState<Material | "new" | null>(null);
   const [moving, setMoving] = useState<{ material: Material; kind: Movement } | null>(null);
   const [kardexOf, setKardexOf] = useState<Material | null>(null);
+  // Celular (RSP-19): acciones secundarias en una hoja, para no apilar 5 botones.
+  const [moreOf, setMoreOf] = useState<Material | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,7 +64,7 @@ export function MaterialsPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-xl font-bold text-ink-strong">Insumos e inventario</h1>
           <p className="text-sm text-ink-muted">
@@ -71,7 +74,7 @@ export function MaterialsPage() {
         <Button onClick={() => setEditing("new")}>+ Insumo</Button>
       </div>
 
-      <div className="w-56">
+      <div className="w-full sm:w-56">
         <SelectField label="Mostrar" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
           <option value="ACTIVE">Activos</option>
           <option value="LOW">Bajo stock mínimo</option>
@@ -89,67 +92,113 @@ export function MaterialsPage() {
             : "Sin insumos con este filtro."}
         </EmptyState>
       ) : (
-        <table className="w-full rounded-md border border-line bg-surface-0 text-sm" data-testid="materials-table">
-          <thead className="text-left text-ink-muted">
-            <tr>
-              <th className="p-3">SKU</th>
-              <th className="p-3">Insumo</th>
-              <th className="p-3 text-right">Existencia</th>
-              <th className="p-3 text-right">Mínimo</th>
-              <th className="p-3 text-right">Costo unitario</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((m) => {
-              const low = lowStock(m);
-              const negative = isNegative(m.current_stock);
-              return (
-                <tr key={m.id} className="border-t border-line align-top">
-                  <td className="p-3 tabular">{m.sku}</td>
-                  <td className="p-3">
-                    <span className="font-semibold text-ink-strong">{m.name}</span>
-                    {!m.is_active && <span className="ml-2 text-xs text-ink-muted">(inactivo)</span>}
-                  </td>
-                  <td className="p-3 text-right tabular">
-                    <span className={negative || low ? "font-bold text-blocked-ink" : "text-ink-strong"}>
-                      {(negative || low) && "[!] "}
+        <DataList
+          label="Insumos"
+          testId="materials-table"
+          rows={visible}
+          rowKey={(m) => m.id}
+          columns={[
+            { key: "sku", header: "SKU", hideOnMobile: true, render: (m) => <span className="tabular">{m.sku}</span> },
+            {
+              key: "name",
+              header: "Insumo",
+              primary: true,
+              render: (m) => (
+                <>
+                  <span className="font-semibold text-ink-strong">{m.name}</span>
+                  {!m.is_active && <span className="ml-2 text-xs font-normal text-ink-muted">(inactivo)</span>}
+                </>
+              ),
+            },
+            {
+              key: "stock",
+              header: "Existencia",
+              align: "right",
+              render: (m) => {
+                const alert = isNegative(m.current_stock) || lowStock(m);
+                return (
+                  <span className="tabular">
+                    <span className={alert ? "font-bold text-blocked-ink" : "text-ink-strong"}>
+                      {alert && "[!] "}
                       {formatQty(m.current_stock)} {MATERIAL_UNIT_LABEL[m.unit]}
                     </span>
-                    {negative && <span className="block text-xs text-blocked-ink">Negativo: registre un conteo</span>}
-                  </td>
-                  <td className="p-3 text-right tabular text-ink-muted">
-                    {m.min_stock ? `${formatQty(m.min_stock)} ${MATERIAL_UNIT_LABEL[m.unit]}` : "—"}
-                  </td>
-                  <td className="p-3 text-right tabular">
-                    ${m.unit_cost} <span className="text-xs text-ink-muted">/ {MATERIAL_UNIT_LABEL[m.unit]}</span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap justify-end gap-1">
-                      <Button variant="secondary" onClick={() => setMoving({ material: m, kind: "restock" })} disabled={!m.is_active}>
-                        Reabastecer
-                      </Button>
-                      <Button variant="ghost" onClick={() => setMoving({ material: m, kind: "waste" })} disabled={!m.is_active}>
-                        Merma
-                      </Button>
-                      <Button variant="ghost" onClick={() => setMoving({ material: m, kind: "adjust" })}>
-                        Conteo
-                      </Button>
-                      <Button variant="ghost" onClick={() => setKardexOf(m)}>
-                        Movimientos
-                      </Button>
-                      <Button variant="ghost" onClick={() => setEditing(m)}>
-                        Editar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    {isNegative(m.current_stock) && <span className="block text-xs text-blocked-ink">Negativo: registre un conteo</span>}
+                  </span>
+                );
+              },
+            },
+            {
+              key: "min",
+              header: "Mínimo",
+              align: "right",
+              render: (m) => (
+                <span className="tabular text-ink-muted">{m.min_stock ? `${formatQty(m.min_stock)} ${MATERIAL_UNIT_LABEL[m.unit]}` : "—"}</span>
+              ),
+            },
+            {
+              key: "cost",
+              header: "Costo unitario",
+              align: "right",
+              render: (m) => (
+                <span className="tabular">
+                  ${m.unit_cost} <span className="text-xs text-ink-muted">/ {MATERIAL_UNIT_LABEL[m.unit]}</span>
+                </span>
+              ),
+            },
+          ]}
+          actions={(m) => (
+            <>
+              <Button variant="secondary" onClick={() => setMoving({ material: m, kind: "restock" })} disabled={!m.is_active}>
+                Reabastecer
+              </Button>
+              <Button variant="secondary" className="md:hidden" onClick={() => setMoreOf(m)} aria-haspopup="dialog">
+                Más acciones…
+              </Button>
+              <span className="hidden md:contents">
+                <Button variant="ghost" onClick={() => setMoving({ material: m, kind: "waste" })} disabled={!m.is_active}>
+                  Merma
+                </Button>
+                <Button variant="ghost" onClick={() => setMoving({ material: m, kind: "adjust" })}>
+                  Conteo
+                </Button>
+                <Button variant="ghost" onClick={() => setKardexOf(m)}>
+                  Movimientos
+                </Button>
+                <Button variant="ghost" onClick={() => setEditing(m)}>
+                  Editar
+                </Button>
+              </span>
+            </>
+          )}
+        />
       )}
 
+      {moreOf && (
+        <Modal title={moreOf.name} onClose={() => setMoreOf(null)}>
+          <div className="grid grid-cols-1 gap-2" data-testid="material-more-actions">
+            {(
+              [
+                ["Registrar merma", () => setMoving({ material: moreOf, kind: "waste" }), !moreOf.is_active],
+                ["Conteo físico", () => setMoving({ material: moreOf, kind: "adjust" }), false],
+                ["Ver movimientos", () => setKardexOf(moreOf), false],
+                ["Editar insumo", () => setEditing(moreOf), false],
+              ] as const
+            ).map(([label, run, disabled]) => (
+              <Button
+                key={label}
+                variant="secondary"
+                disabled={disabled}
+                onClick={() => {
+                  setMoreOf(null);
+                  run();
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </Modal>
+      )}
       {editing && (
         <Modal title={editing === "new" ? "Insumo nuevo" : "Editar insumo"} onClose={() => setEditing(null)}>
           <MaterialForm
@@ -440,7 +489,8 @@ function KardexModal({ material, onClose }: { material: Material; onClose: () =>
       ) : rows.length === 0 ? (
         <EmptyState>Sin movimientos.</EmptyState>
       ) : (
-        <table className="w-full text-sm tabular">
+        <div className="-mx-1 overflow-x-auto">
+        <table className="w-full min-w-[320px] text-xs tabular md:text-sm">
           <thead className="text-left text-ink-muted">
             <tr>
               <th className="py-1">Fecha</th>
@@ -468,6 +518,7 @@ function KardexModal({ material, onClose }: { material: Material; onClose: () =>
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </Modal>
   );

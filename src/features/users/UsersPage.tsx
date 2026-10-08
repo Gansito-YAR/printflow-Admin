@@ -12,6 +12,7 @@ import { useAuthStore } from "../../store/auth";
 import { useSettingsStore } from "../../store/settings";
 import { formatDateTime } from "../../utils/dates";
 import { Button, ErrorPanel, Spinner } from "../../components/ui";
+import { DataList } from "../../components/DataList";
 
 const ROLE_LABEL: Record<UserRole, string> = { ADMIN: "Administrador", INSTALLER: "Instalador" };
 
@@ -65,56 +66,55 @@ export function UsersPage() {
       {loading ? (
         <Spinner label="Cargando…" />
       ) : (
-        <table className="w-full rounded-md border border-line bg-surface-0 text-sm">
-          <thead className="text-left text-ink-muted">
-            <tr>
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Rol</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3">Alta</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((u) => {
-              const self = u.id === me;
-              return (
-                <tr key={u.id} className="border-t border-line">
-                  <td className="p-3 font-semibold text-ink-strong">
-                    {u.full_name || "(sin nombre)"} {self && <span className="text-xs text-ink-muted">(usted)</span>}
-                  </td>
-                  <td className="p-3">
-                    <select
-                      value={u.role}
-                      disabled={self || busy !== null}
-                      onChange={(e) => void update(u, { role: e.target.value as UserRole })}
-                      className="min-h-10 rounded-md border border-line bg-surface-0 px-2"
-                      aria-label={`Rol de ${u.full_name}`}
-                    >
-                      {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABEL[r]}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-3">{u.is_active ? "Activo" : "Inactivo"}</td>
-                  <td className="p-3 text-ink-muted">{formatDateTime(u.created_at, timezone)}</td>
-                  <td className="p-3 text-right">
-                    <Button
-                      variant={u.is_active ? "secondary" : "primary"}
-                      disabled={self || busy !== null}
-                      loading={busy === u.id}
-                      onClick={() => void update(u, { is_active: !u.is_active })}
-                    >
-                      {u.is_active ? "Desactivar" : "Activar"}
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <DataList
+          label="Usuarios"
+          testId="users-table"
+          rows={rows}
+          rowKey={(u) => u.id}
+          columns={[
+            {
+              key: "name",
+              header: "Nombre",
+              primary: true,
+              render: (u) => (
+                <span className="break-all font-semibold text-ink-strong">
+                  {u.full_name || "(sin nombre)"} {u.id === me && <span className="text-xs font-normal text-ink-muted">(usted)</span>}
+                </span>
+              ),
+            },
+            {
+              key: "role",
+              header: "Rol",
+              render: (u) => (
+                <select
+                  value={u.role}
+                  disabled={u.id === me || busy !== null}
+                  onChange={(e) => void update(u, { role: e.target.value as UserRole })}
+                  className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-2 text-base md:min-h-10 md:w-auto md:text-sm"
+                  aria-label={`Rol de ${u.full_name}`}
+                >
+                  {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABEL[r]}
+                    </option>
+                  ))}
+                </select>
+              ),
+            },
+            { key: "active", header: "Estado", render: (u) => (u.is_active ? "Activo" : "Inactivo") },
+            { key: "created", header: "Alta", render: (u) => <span className="text-ink-muted">{formatDateTime(u.created_at, timezone)}</span> },
+          ]}
+          actions={(u) => (
+            <Button
+              variant={u.is_active ? "secondary" : "primary"}
+              disabled={u.id === me || busy !== null}
+              loading={busy === u.id}
+              onClick={() => void update(u, { is_active: !u.is_active })}
+            >
+              {u.is_active ? "Desactivar" : "Activar"}
+            </Button>
+          )}
+        />
       )}
     </div>
   );

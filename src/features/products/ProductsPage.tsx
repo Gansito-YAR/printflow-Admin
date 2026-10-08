@@ -10,6 +10,7 @@ import type { Product, ProductCategory, PricingUnit } from "../../lib/types";
 import { CATEGORY_LABEL, UNIT_LABEL } from "../../lib/types";
 import { formatMoney, isGreater, parseAmountInput } from "../../utils/money";
 import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextField } from "../../components/ui";
+import { DataList } from "../../components/DataList";
 import { parseQuantity } from "../../utils/quantity";
 import { RecipeModal } from "./RecipeModal";
 
@@ -37,7 +38,7 @@ export function ProductsPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-ink-strong">Productos y precios</h1>
           <p className="text-sm text-ink-muted">Cambiar un precio no afecta pedidos ya creados.</p>
@@ -50,43 +51,42 @@ export function ProductsPage() {
       ) : rows.length === 0 ? (
         <EmptyState>Sin productos.</EmptyState>
       ) : (
-        <table className="w-full rounded-md border border-line bg-surface-0 text-sm">
-          <thead className="text-left text-ink-muted">
-            <tr>
-              <th className="p-3">SKU</th>
-              <th className="p-3">Producto</th>
-              <th className="p-3">Categoría</th>
-              <th className="p-3">Unidad</th>
-              <th className="p-3 text-right">Menudeo</th>
-              <th className="p-3 text-right">Mayoreo</th>
-              <th className="p-3 text-right">Mín. mayoreo</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((p) => (
-              <tr key={p.id} className="border-t border-line">
-                <td className="p-3 tabular">{p.sku}</td>
-                <td className="p-3 font-semibold text-ink-strong">{p.name}</td>
-                <td className="p-3">{CATEGORY_LABEL[p.category]}</td>
-                <td className="p-3">{UNIT_LABEL[p.pricing_unit]}</td>
-                <td className="p-3 text-right tabular">{formatMoney(p.retail_price)}</td>
-                <td className="p-3 text-right tabular">{formatMoney(p.wholesale_price)}</td>
-                <td className="p-3 text-right tabular">{p.wholesale_min_qty ?? "—"}</td>
-                <td className="p-3">{p.is_active ? "Activo" : "Inactivo"}</td>
-                <td className="p-3 text-right whitespace-nowrap">
-                  <Button variant="ghost" onClick={() => setRecipeOf(p)}>
-                    Receta y costo
-                  </Button>
-                  <Button variant="ghost" onClick={() => setEditing(p)}>
-                    Editar
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataList
+          label="Productos"
+          testId="products-table"
+          rows={rows}
+          rowKey={(p) => p.id}
+          columns={[
+            { key: "sku", header: "SKU", hideOnMobile: true, render: (p) => <span className="tabular">{p.sku}</span> },
+            {
+              key: "name",
+              header: "Producto",
+              primary: true,
+              render: (p) => (
+                <span className="font-semibold text-ink-strong">
+                  {p.name}
+                  {!p.is_active && <span className="ml-2 text-xs font-normal text-ink-muted md:hidden">(inactivo)</span>}
+                </span>
+              ),
+            },
+            { key: "cat", header: "Categoría", hideOnTablet: true, render: (p) => CATEGORY_LABEL[p.category] },
+            { key: "unit", header: "Unidad", render: (p) => UNIT_LABEL[p.pricing_unit] },
+            { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.retail_price)}</span> },
+            { key: "wholesale", header: "Mayoreo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.wholesale_price)}</span> },
+            { key: "min", header: "Mín. mayoreo", align: "right", hideOnTablet: true, render: (p) => <span className="tabular">{p.wholesale_min_qty ?? "—"}</span> },
+            { key: "active", header: "Estado", hideOnMobile: true, render: (p) => (p.is_active ? "Activo" : "Inactivo") },
+          ]}
+          actions={(p) => (
+            <>
+              <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setRecipeOf(p)}>
+                Receta y costo
+              </Button>
+              <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(p)}>
+                Editar
+              </Button>
+            </>
+          )}
+        />
       )}
       {recipeOf && <RecipeModal product={recipeOf} onClose={() => setRecipeOf(null)} />}
       {editing && (
@@ -164,7 +164,7 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} disabled={saving} required />
         <TextField label="Nombre" value={name} onChange={(e) => setName(e.target.value)} disabled={saving} required />
         <SelectField label="Categoría" value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)} disabled={saving}>
