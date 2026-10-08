@@ -1,0 +1,245 @@
+/* PrintFlow AI — tokens.css
+ * Fase 2 — Arquitectura en TRES capas:
+ *
+ *   CAPA 1 · Primitivas   — paleta cruda de la marca. NO cambia entre temas.
+ *   CAPA 2 · Semánticas   — nombres que usan los componentes, definidos por tema.
+ *   CAPA 3 · Componentes  — solo usan tokens semánticos (nada que editar aquí).
+ *
+ * Reglas duras (Fase 2 §2.3):
+ *  - Ningún componente escribe hex/rgb() ni menciona una primitiva.
+ *  - Todo token semántico existe en claro Y en oscuro.
+ *  - Espaciado/layout/hitbox NO cambian entre temas.
+ *  - No borrar ni renombrar tokens existentes.
+ *
+ * Cambio de tema: [data-theme="dark"|"light"] en <html>.
+ * Sin atributo → resuelve @media (prefers-color-scheme). El atributo explícito
+ * siempre gana sobre la media query, en ambos sentidos.
+ */
+
+/* ============================================================
+ * CAPA 1 — PRIMITIVAS (marca Imprenta Escalante)
+ * Valores medidos sobre los assets en docs/identidad-visual.md
+ * ========================================================== */
+
+:root {
+  /* Naranja de marca — medido del logo/banner */
+  --brand-50:  #FEF6E6;
+  --brand-100: #FCE8C4;
+  --brand-300: #FBBC5F;
+  --brand-500: #F89A16;   /* tono principal */
+  --brand-600: #DD850A;
+  --brand-700: #B56D08;   /* naranja legible como texto sobre claro */
+  --brand-900: #6E4305;
+
+  /* Neutros — negro texturizado de la marca + grises de Fase 1 */
+  --neutral-0:   #FFFFFF;
+  --neutral-50:  #F8F8F8;
+  --neutral-100: #EDEDED;
+  --neutral-200: #D4D4D4;
+  --neutral-300: #BDBDBD;
+  --neutral-500: #757575;
+  --neutral-600: #4A4A4A;
+  --neutral-700: #303030;
+  --neutral-800: #202020;
+  --neutral-850: #181818;
+  --neutral-900: #101010;
+
+  /* Estados — refuerzo, nunca única señal */
+  --danger-300:  #EF5350;   /* legible sobre oscuro */
+  --danger-500:  #D32F2F;
+  --danger-700:  #B71C1C;
+  --danger-900:  #7F0000;
+  --success-300: #66BB6A;   /* legible sobre oscuro */
+  --success-500: #2E7D32;
+  --success-700: #1B5E20;
+  --success-900: #0B3D0F;
+  --warning-500: #ED6C02;
+  --warning-700: #B25000;
+}
+
+/* ============================================================
+ * CAPA 2 — SEMÁNTICAS POR TEMA
+ * ========================================================== */
+
+/* ---------- Tema claro (por defecto y explícito) ---------- */
+:root,
+:root[data-theme="light"] {
+  /* Surfaces */
+  --surface-0: var(--neutral-0);
+  --surface-1: var(--neutral-50);
+  --surface-2: var(--neutral-100);
+  --surface-3: var(--neutral-300);
+
+  /* Ink */
+  --ink-strong: var(--neutral-900);
+  --ink-base:   var(--neutral-700);
+  --ink-muted:  var(--neutral-500);
+
+  /* Borders */
+  --border-hairline: var(--neutral-200);
+  --border-strong:   var(--neutral-900);
+
+  /* Overlay */
+  --overlay-backdrop: var(--neutral-900);
+
+  /* Marca */
+  --brand-bg:   var(--brand-500);
+  --brand-ink:  var(--neutral-900);   /* texto oscuro sobre naranja */
+  --brand-ink-accent: var(--brand-700); /* naranja legible como texto */
+  --brand-soft-bg:  var(--brand-50);
+
+  /* Acciones */
+  --action-primary-bg:  var(--brand-500);
+  --action-primary-ink: var(--neutral-900);
+  --action-danger-bg:   var(--neutral-900);
+  --action-danger-ink:  var(--neutral-0);
+  --action-disabled-bg: var(--neutral-200);
+  --action-disabled-ink: var(--neutral-500);
+
+  /* Estados — refuerzo sobre la estructura existente */
+  --state-blocked-bg:     #FDECEA;
+  --state-blocked-ink:    var(--danger-700);
+  --state-blocked-border: var(--danger-700);
+  --state-cleared-bg:     #E8F5E9;
+  --state-cleared-ink:    var(--success-700);
+  --state-cleared-border: var(--success-700);
+  --state-neutral-bg:     var(--neutral-50);
+  --state-neutral-ink:    var(--neutral-700);
+  --state-neutral-border: var(--neutral-500);
+  --state-warning-bg:     #FFF3E0;
+  --state-warning-ink:    var(--warning-700);
+  --state-warning-border: var(--warning-500);
+
+  /* Sombras (jerarquía en tema claro) */
+  --shadow-1: 0 1px 2px rgba(16, 16, 16, 0.08);
+  --shadow-2: 0 2px 8px rgba(16, 16, 16, 0.12);
+}
+
+/* ---------- Tema oscuro ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface-0: var(--neutral-900);
+    --surface-1: var(--neutral-850);
+    --surface-2: var(--neutral-800);
+    --surface-3: var(--neutral-700);
+
+    --ink-strong: var(--neutral-50);
+    --ink-base:   var(--neutral-200);
+    --ink-muted:  var(--neutral-300);
+
+    --border-hairline: var(--neutral-700);
+    --border-strong:   var(--neutral-50);
+
+    --overlay-backdrop: var(--neutral-900);
+
+    --brand-bg:   var(--brand-500);
+    --brand-ink:  var(--neutral-900);
+    --brand-ink-accent: var(--brand-300);
+    --brand-soft-bg:  #3A2A0E;
+
+    --action-primary-bg:  var(--brand-500);
+    --action-primary-ink: var(--neutral-900);
+    --action-danger-bg:   var(--neutral-50);
+    --action-danger-ink:  var(--neutral-900);
+    --action-disabled-bg: var(--neutral-700);
+    --action-disabled-ink: var(--neutral-300);
+
+    --state-blocked-bg:     #4A1410;
+    --state-blocked-ink:    var(--danger-300);
+    --state-blocked-border: var(--danger-300);
+    --state-cleared-bg:     #123A16;
+    --state-cleared-ink:    var(--success-300);
+    --state-cleared-border: var(--success-300);
+    --state-neutral-bg:     var(--neutral-850);
+    --state-neutral-ink:    var(--neutral-300);
+    --state-neutral-border: var(--neutral-500);
+    --state-warning-bg:     #3D2405;
+    --state-warning-ink:    var(--brand-300);
+    --state-warning-border: var(--warning-500);
+
+    /* En oscuro la jerarquía es por superficie, no por sombra */
+    --shadow-1: none;
+    --shadow-2: none;
+  }
+}
+
+:root[data-theme="dark"] {
+  --surface-0: var(--neutral-900);
+  --surface-1: var(--neutral-850);
+  --surface-2: var(--neutral-800);
+  --surface-3: var(--neutral-700);
+
+  --ink-strong: var(--neutral-50);
+  --ink-base:   var(--neutral-200);
+  --ink-muted:  var(--neutral-300);
+
+  --border-hairline: var(--neutral-700);
+  --border-strong:   var(--neutral-50);
+
+  --overlay-backdrop: var(--neutral-900);
+
+  --brand-bg:   var(--brand-500);
+  --brand-ink:  var(--neutral-900);
+  --brand-ink-accent: var(--brand-300);
+  --brand-soft-bg:  #3A2A0E;
+
+  --action-primary-bg:  var(--brand-500);
+  --action-primary-ink: var(--neutral-900);
+  --action-danger-bg:   var(--neutral-50);
+  --action-danger-ink:  var(--neutral-900);
+  --action-disabled-bg: var(--neutral-700);
+  --action-disabled-ink: var(--neutral-300);
+
+  --state-blocked-bg:     #4A1410;
+  --state-blocked-ink:    var(--danger-300);
+  --state-blocked-border: var(--danger-300);
+  --state-cleared-bg:     #123A16;
+  --state-cleared-ink:    var(--success-300);
+  --state-cleared-border: var(--success-300);
+  --state-neutral-bg:     var(--neutral-850);
+  --state-neutral-ink:    var(--neutral-300);
+  --state-neutral-border: var(--neutral-500);
+  --state-warning-bg:     #3D2405;
+  --state-warning-ink:    var(--brand-300);
+  --state-warning-border: var(--warning-500);
+
+  --shadow-1: none;
+  --shadow-2: none;
+}
+
+/* ============================================================
+ * TOKENS FIJOS — no cambian entre temas
+ * ========================================================== */
+
+:root {
+  /* Espaciado base (múltiplos de 8) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+
+  /* Layout */
+  --header-height: 56px;
+  --bottom-nav-height: 64px;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Hitbox mínimo */
+  --hitbox-min: 60px;
+  --button-height: 64px;
+
+  /* Tipografía (Etapa 6) */
+  --text-h1:    18px;
+  --text-body:  14px;
+  --text-small: 12px;
+  --text-data:  18px;   /* saldo/datos críticos — no baja */
+
+  /* Radios (Etapa 6) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Transiciones (Etapa 6) */
+  --transition-fast: 150ms ease;
+  --transition-theme: 200ms ease;
+}
