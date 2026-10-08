@@ -12,6 +12,10 @@ import { OrderDetailPage } from "./features/orders/OrderDetailPage";
 import { CustomersPage } from "./features/customers/CustomersPage";
 import { ProductsPage } from "./features/products/ProductsPage";
 import { UsersPage } from "./features/users/UsersPage";
+import { OrderHistoryPage } from "./features/orders/OrderHistoryPage";
+import { MaterialsPage } from "./features/materials/MaterialsPage";
+import { ProfitPage } from "./features/reports/ProfitPage";
+import { SettingsPage } from "./features/settings/SettingsPage";
 
 export default function App() {
   const init = useAuthStore((s) => s.init);
@@ -30,11 +34,15 @@ export default function App() {
             }
           >
             <Route index element={<KanbanPage />} />
+            <Route path="pedidos" element={<OrderHistoryPage />} />
             <Route path="pedidos/nuevo" element={<NewOrderPage />} />
             <Route path="pedidos/:folio" element={<OrderDetailPage />} />
             <Route path="clientes" element={<CustomersPage />} />
             <Route path="productos" element={<ProductsPage />} />
+            <Route path="insumos" element={<MaterialsPage />} />
+            <Route path="utilidad" element={<ProfitPage />} />
             <Route path="usuarios" element={<UsersPage />} />
+            <Route path="configuracion" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

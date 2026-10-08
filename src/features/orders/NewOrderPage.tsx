@@ -17,6 +17,7 @@ import { formatMoney } from "../../utils/money";
 import { fromDateTimeLocal, toDateTimeLocal } from "../../utils/dates";
 import { Button, ErrorPanel, Spinner, TextAreaField, TextField } from "../../components/ui";
 import { CustomerPicker } from "./CustomerPicker";
+import { EstimatePanel } from "./CostingSection";
 
 interface Row {
   key: string;
@@ -312,6 +313,7 @@ export function NewOrderPage() {
               <span className="text-right font-semibold text-ink-strong">{formatMoney(quote.deposit_required)}</span>
             </div>
           ) : null}
+          {customer && items && quote && !quoting && <EstimatePanel customerId={customer.id} items={items} />}
           <p className="text-xs text-ink-muted">
             El pedido nace como &quot;Pendiente de anticipo&quot;. No pasa a producción sin el anticipo mínimo o una
             autorización del administrador.

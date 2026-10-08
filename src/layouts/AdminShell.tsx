@@ -1,21 +1,40 @@
 // Layout de escritorio (Brief UI §2): sidebar oscuro, header con el usuario
 // activo y área de contenido amplia.
 
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { fetchLowStockCount } from "../lib/queries";
 import { useAuthStore } from "../store/auth";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
 const NAV = [
   { to: "/", label: "Tablero", end: true },
-  { to: "/pedidos/nuevo", label: "Nuevo pedido", end: false },
+  { to: "/pedidos/nuevo", label: "Nuevo pedido", end: true },
+  { to: "/pedidos", label: "Historial", end: true },
   { to: "/clientes", label: "Clientes", end: false },
-  { to: "/productos", label: "Productos", end: false },
+  { to: "/productos", label: "Productos y recetas", end: false },
+  { to: "/insumos", label: "Insumos", end: false },
+  { to: "/utilidad", label: "Utilidad y mermas", end: false },
   { to: "/usuarios", label: "Usuarios", end: false },
+  { to: "/configuracion", label: "Configuración", end: false },
 ];
+
+/** Insumos bajo mínimo; se refresca al navegar. */
+function useLowStock() {
+  const { pathname } = useLocation();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    fetchLowStockCount()
+      .then(setCount)
+      .catch(() => setCount(0));
+  }, [pathname]);
+  return count;
+}
 
 export function AdminShell() {
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
+  const lowStock = useLowStock();
 
   return (
     <div className="flex h-full">
@@ -36,6 +55,15 @@ export function AdminShell() {
               }
             >
               {item.label}
+              {item.to === "/insumos" && lowStock > 0 && (
+                <span
+                  className="ml-2 rounded-sm bg-blocked px-1.5 text-xs font-bold text-blocked-ink"
+                  title={`${lowStock} insumo(s) bajo el stock mínimo`}
+                  data-testid="low-stock-badge"
+                >
+                  {lowStock}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

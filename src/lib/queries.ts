@@ -5,7 +5,16 @@
 
 import { supabase } from "./supabaseClient";
 import { toAppError } from "./errors";
-import type { Customer, OrderDetail, OrderSummary, Product, Profile } from "./types";
+import type {
+  Customer,
+  InventoryTx,
+  Material,
+  OrderDetail,
+  OrderStatus,
+  OrderSummary,
+  Product,
+  Profile,
+} from "./types";
 
 export const ORDER_SUMMARY_SELECT =
   "id, folio, status, promised_date, total_price::text, balance_due::text, " +
@@ -23,7 +32,7 @@ const ORDER_DETAIL_SELECT =
 
 const PRODUCT_SELECT =
   "id, sku, name, category, pricing_unit, retail_price::text, wholesale_price::text, " +
-  "wholesale_min_qty::text, is_active";
+  "wholesale_min_qty::text, is_active, fixed_cost::text";
 
 const CUSTOMER_SELECT = "id, phone_number, full_name, pricing_tier, is_active, notes, created_at";
 
@@ -79,4 +88,103 @@ export async function fetchProfiles(): Promise<Profile[]> {
     .select("id, role, full_name, is_active, created_at")
     .order("created_at");
   return unwrap<Profile[]>(result);
+}
+
+// ----- Historial de pedidos -------------------------------------------------
+
+export interface OrderHistoryFilter {
+  status: OrderStatus | "ALL";
+  term: string;
+  from: string | null; // ISO UTC, inclusivo
+  to: string | null; // ISO UTC, exclusivo
+  page: number;
+}
+
+export const HISTORY_PAGE_SIZE = 50;
+
+export type OrderHistoryRow = OrderSummary & { created_at: string; delivered_at: string | null };
+
+export async function fetchOrderHistory(f: OrderHistoryFilter): Promise<{ rows: OrderHistoryRow[]; count: number }> {
+  let query = supabase
+    .from("orders")
+    .select(ORDER_SUMMARY_SELECT + ", created_at, delivered_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(f.page * HISTORY_PAGE_SIZE, f.page * HISTORY_PAGE_SIZE + HISTORY_PAGE_SIZE - 1);
+  if (f.status !== "ALL") query = query.eq("status", f.status);
+  if (f.from) query = query.gte("created_at", f.from);
+  if (f.to) query = query.lt("created_at", f.to);
+  const clean = f.term.trim().replace(/[%,()]/g, "");
+  if (clean) query = query.ilike("folio", `%${clean}%`);
+  const result = await query;
+  if (result.error) throw toAppError(result.error);
+  return { rows: result.data as unknown as OrderHistoryRow[], count: result.count ?? 0 };
+}
+
+// ----- Módulo 4 --------------------------------------------------------------
+
+const MATERIAL_SELECT =
+  "id, sku, name, unit, unit_cost::text, current_stock::text, min_stock::text, is_active";
+
+export async function fetchMaterials(onlyActive = false): Promise<Material[]> {
+  let query = supabase.from("raw_materials").select(MATERIAL_SELECT).order("name");
+  if (onlyActive) query = query.eq("is_active", true);
+  return unwrap<Material[]>(await query);
+}
+
+export async function fetchKardex(materialId: string): Promise<InventoryTx[]> {
+  const result = await supabase
+    .from("inventory_transactions")
+    .select(
+      "id, type, quantity::text, unit_cost::text, reason, created_at, " +
+        "order:orders(folio), author:profiles(full_name)",
+    )
+    .eq("raw_material_id", materialId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(200);
+  return unwrap<InventoryTx[]>(result);
+}
+
+export async function fetchLowStockCount(): Promise<number> {
+  const result = await supabase.from("low_stock_materials").select("id", { count: "exact", head: true });
+  if (result.error) throw toAppError(result.error);
+  return result.count ?? 0;
+}
+
+export interface ConsumedMaterial {
+  raw_material_id: string;
+  name: string;
+  unit: string;
+  /** Consumido neto (consumo − reintegros), 4 decimales. */
+  consumed: string;
+}
+
+/** Insumos consumidos por un pedido, para ofrecer el reintegro al cancelar. */
+export async function fetchOrderConsumption(orderId: string): Promise<ConsumedMaterial[]> {
+  const result = await supabase
+    .from("inventory_transactions")
+    .select("raw_material_id, quantity::text, material:raw_materials(name, unit)")
+    .eq("order_id", orderId)
+    .in("type", ["PRODUCTION_USAGE", "PRODUCTION_RETURN"]);
+  const rows = unwrap<
+    { raw_material_id: string; quantity: string; material: { name: string; unit: string } | null }[]
+  >(result);
+  // Suma exacta en diezmilésimas con BigInt (sin punto flotante).
+  const map = new Map<string, { name: string; unit: string; net: bigint }>();
+  for (const r of rows) {
+    const negative = r.quantity.startsWith("-");
+    const [i = "0", d = ""] = r.quantity.replace("-", "").split(".");
+    const v = BigInt(i) * 10000n + BigInt((d + "0000").slice(0, 4));
+    const cur = map.get(r.raw_material_id) ?? { name: r.material?.name ?? "", unit: r.material?.unit ?? "", net: 0n };
+    cur.net += negative ? v : -v; // el consumo es negativo en el kardex
+    map.set(r.raw_material_id, cur);
+  }
+  return [...map.entries()]
+    .filter(([, m]) => m.net > 0n)
+    .map(([id, m]) => ({
+      raw_material_id: id,
+      name: m.name,
+      unit: m.unit,
+      consumed: `${m.net / 10000n}.${(m.net % 10000n).toString().padStart(4, "0")}`,
+    }));
 }

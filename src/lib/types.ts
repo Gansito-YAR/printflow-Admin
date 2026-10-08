@@ -51,6 +51,7 @@ export interface Profile {
 export interface BusinessSettings {
   deposit_pct: string;
   timezone: string;
+  allow_negative_stock: boolean;
 }
 
 export interface Customer {
@@ -73,6 +74,8 @@ export interface Product {
   wholesale_price: Money;
   wholesale_min_qty: string | null;
   is_active: boolean;
+  /** C_fijo por unidad facturable (Módulo 4). */
+  fixed_cost: string;
 }
 
 /** Pedido tal como lo muestra el Kanban. */
@@ -227,3 +230,139 @@ export const EVENT_LABEL: Record<OrderEventType, string> = {
   EXTRA_COST_VOIDED: "Gasto extra anulado",
   MATERIALS_RETURNED: "Material reintegrado al inventario",
 };
+
+// ----- Módulo 4: costos, inventario y mermas (CONFIDENCIAL: solo ADMIN) -----
+
+export type MaterialUnit = "M2" | "ML" | "UNIT" | "LT" | "KG";
+export type InventoryTxType = "RESTOCK" | "PRODUCTION_USAGE" | "PRODUCTION_RETURN" | "WASTE" | "ADJUSTMENT";
+
+export const MATERIAL_UNIT_LABEL: Record<MaterialUnit, string> = {
+  M2: "m²",
+  ML: "m lineal",
+  UNIT: "pieza",
+  LT: "litro",
+  KG: "kg",
+};
+
+export const TX_LABEL: Record<InventoryTxType, string> = {
+  RESTOCK: "Reabasto",
+  PRODUCTION_USAGE: "Consumo de producción",
+  PRODUCTION_RETURN: "Reintegro por cancelación",
+  WASTE: "Merma",
+  ADJUSTMENT: "Ajuste por conteo",
+};
+
+export interface Material {
+  id: string;
+  sku: string;
+  name: string;
+  unit: MaterialUnit;
+  unit_cost: string;
+  current_stock: string;
+  min_stock: string | null;
+  is_active: boolean;
+  inventory_value?: Money;
+}
+
+export interface InventoryTx {
+  id: number;
+  type: InventoryTxType;
+  quantity: string;
+  unit_cost: string | null;
+  reason: string | null;
+  created_at: string;
+  order: { folio: string } | null;
+  author: { full_name: string } | null;
+}
+
+export interface RecipeLineInput {
+  raw_material_id: string;
+  quantity_required: string;
+  waste_margin_pct: string;
+}
+
+export interface ProductSimulation {
+  materials: {
+    raw_material_id: string;
+    name: string;
+    unit: MaterialUnit;
+    quantity_required: string;
+    waste_margin_pct: string;
+    unit_cost: string;
+    cost: string;
+  }[];
+  has_recipe: boolean;
+  material_cost: string;
+  fixed_cost: string;
+  unit_cost: string;
+  retail_price: Money;
+  wholesale_price: Money;
+  retail_profit: Money;
+  wholesale_profit: Money;
+  retail_margin_pct: string | null;
+  wholesale_margin_pct: string | null;
+}
+
+export interface CostingLine {
+  line_no: number;
+  description: string;
+  sale: Money;
+  material_cost: Money;
+  fixed_cost: Money;
+  production_cost: Money;
+  has_recipe: boolean;
+  materials: { raw_material_id: string; name: string; consumed_qty: string; unit_cost: string; material_cost: Money }[];
+}
+
+export interface ExtraCost {
+  id: string;
+  concept: string;
+  amount: Money;
+  created_at: string;
+  voided: boolean;
+  void_reason: string | null;
+  created_by: string | null;
+}
+
+export interface OrderCosting {
+  is_estimate: boolean;
+  lines: CostingLine[];
+  sales: Money;
+  production_cost: Money;
+  extra_cost: Money;
+  profit: Money;
+  margin_pct: string | null;
+  incomplete_cost: boolean;
+  extras?: ExtraCost[];
+  frozen_at?: string | null;
+}
+
+export type ReportBasis = "DELIVERED" | "CREATED";
+export type ReportGroup = "ORDER" | "CUSTOMER" | "MONTH" | "PRODUCT" | "CATEGORY";
+
+export interface ProfitRow {
+  key: string;
+  label: string;
+  orders: number;
+  sales: Money;
+  production_cost: Money;
+  extra_cost: Money;
+  profit: Money;
+  margin_pct: string | null;
+  incomplete_cost: boolean;
+}
+
+export interface ProfitReport {
+  rows: ProfitRow[];
+  totals: Omit<ProfitRow, "key" | "label" | "incomplete_cost">;
+}
+
+export interface WasteRow {
+  raw_material_id: string;
+  name: string;
+  unit: MaterialUnit;
+  theoretical_qty: string;
+  theoretical_cost: Money;
+  real_qty: string;
+  real_cost: Money;
+}

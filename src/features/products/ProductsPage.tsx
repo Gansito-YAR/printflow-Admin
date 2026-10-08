@@ -10,12 +10,15 @@ import type { Product, ProductCategory, PricingUnit } from "../../lib/types";
 import { CATEGORY_LABEL, UNIT_LABEL } from "../../lib/types";
 import { formatMoney, isGreater, parseAmountInput } from "../../utils/money";
 import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextField } from "../../components/ui";
+import { parseQuantity } from "../../utils/quantity";
+import { RecipeModal } from "./RecipeModal";
 
 export function ProductsPage() {
   const [rows, setRows] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
+  const [recipeOf, setRecipeOf] = useState<Product | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -72,7 +75,10 @@ export function ProductsPage() {
                 <td className="p-3 text-right tabular">{formatMoney(p.wholesale_price)}</td>
                 <td className="p-3 text-right tabular">{p.wholesale_min_qty ?? "—"}</td>
                 <td className="p-3">{p.is_active ? "Activo" : "Inactivo"}</td>
-                <td className="p-3 text-right">
+                <td className="p-3 text-right whitespace-nowrap">
+                  <Button variant="ghost" onClick={() => setRecipeOf(p)}>
+                    Receta y costo
+                  </Button>
                   <Button variant="ghost" onClick={() => setEditing(p)}>
                     Editar
                   </Button>
@@ -82,6 +88,7 @@ export function ProductsPage() {
           </tbody>
         </table>
       )}
+      {recipeOf && <RecipeModal product={recipeOf} onClose={() => setRecipeOf(null)} />}
       {editing && (
         <Modal title={editing === "new" ? "Producto nuevo" : "Editar producto"} onClose={() => setEditing(null)}>
           <ProductForm
@@ -106,6 +113,7 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
   const [retail, setRetail] = useState(product?.retail_price ?? "");
   const [wholesale, setWholesale] = useState(product?.wholesale_price ?? "");
   const [minQty, setMinQty] = useState(product?.wholesale_min_qty ?? "");
+  const [fixedCost, setFixedCost] = useState(product?.fixed_cost ?? "0");
   const [active, setActive] = useState(product?.is_active ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -122,6 +130,8 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
     if (!w.ok) return setError(`Mayoreo: ${w.error}`);
     if (isGreater(w.value, r.value)) return setError("El precio de mayoreo no puede ser mayor al de menudeo.");
     if (m && !m.ok) return setError(`Mínimo de mayoreo: ${m.error}`);
+    const fc = parseQuantity(fixedCost || "0", { allowZero: true, label: "El costo fijo" });
+    if (!fc.ok) return setError(fc.error);
 
     inFlight.current = true;
     setSaving(true);
@@ -135,6 +145,7 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
       retail_price: r.value,
       wholesale_price: w.value,
       wholesale_min_qty: m && m.ok ? m.value : null,
+      fixed_cost: fc.value,
       is_active: active,
     };
     const result = product
@@ -183,6 +194,14 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
           value={minQty}
           onChange={(e) => setMinQty(e.target.value)}
           hint="Vacío = solo clientes de tarifa Mayoreo."
+          disabled={saving}
+        />
+        <TextField
+          label={`Costo fijo por ${unit === "M2" ? "m²" : "pieza"}`}
+          inputMode="decimal"
+          value={fixedCost}
+          onChange={(e) => setFixedCost(e.target.value)}
+          hint="Mano de obra, energía, desgaste de máquina. Confidencial."
           disabled={saving}
         />
       </div>

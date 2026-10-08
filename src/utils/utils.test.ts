@@ -1,4 +1,5 @@
 import { formatMoney, isGreater, parseAmountInput, toCents } from "./money";
+import { compareQty, formatQty, isNegative, parseQuantity } from "./quantity";
 import { fromDateTimeLocal, toDateTimeLocal, urgencyOf } from "./dates";
 import { toAppError } from "../lib/errors";
 import { normalizePhone } from "../features/customers/CustomerForm";
@@ -73,5 +74,23 @@ describe("derivePaid (remisión)", () => {
   });
   it("aborta si no cuadra", () => {
     expect(derivePaid({ total_price: "1000.00", balance_due: "400.00", payments: [pay("500.00")] })).toBeNull();
+  });
+});
+
+describe("quantity (insumos)", () => {
+  it("valida hasta 4 decimales y rechaza cero", () => {
+    expect(parseQuantity("1.0505")).toEqual({ ok: true, value: "1.0505" });
+    expect(parseQuantity("1.00005").ok).toBe(false);
+    expect(parseQuantity("0").ok).toBe(false);
+    expect(parseQuantity("0", { allowZero: true }).ok).toBe(true);
+    expect(parseQuantity("abc").ok).toBe(false);
+  });
+  it("compara sin flotantes y formatea", () => {
+    expect(compareQty("6.6", "6.6000")).toBe(0);
+    expect(compareQty("7", "6.6")).toBe(1);
+    expect(formatQty("6.8040")).toBe("6.804");
+    expect(formatQty("20.0000")).toBe("20");
+    expect(isNegative("-0.5")).toBe(true);
+    expect(isNegative("0.0000")).toBe(false);
   });
 });

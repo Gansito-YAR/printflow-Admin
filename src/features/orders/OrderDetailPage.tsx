@@ -15,6 +15,7 @@ import { Button, EmptyState, ErrorPanel, Spinner, StatusBadge } from "../../comp
 import { PaymentModal } from "../pos/PaymentModal";
 import { RemissionButton } from "../pdf/RemissionButton";
 import { AdvancedActions } from "../supervisor/AdvancedActions";
+import { CostingSection } from "./CostingSection";
 
 const NEXT: Partial<Record<OrderStatus, "IN_PRODUCTION" | "READY_FOR_DELIVERY">> = {
   PENDING_DEPOSIT: "IN_PRODUCTION",
@@ -199,6 +200,8 @@ export function OrderDetailPage() {
           </ol>
         </section>
       </div>
+
+      <CostingSection key={`${order.id}-${order.status}`} orderId={order.id} timezone={timezone} />
 
       <AdvancedActions order={order} timezone={timezone} onDone={() => void load()} />
 
