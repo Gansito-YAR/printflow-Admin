@@ -57,6 +57,12 @@ export interface Profile {
   created_at: string;
 }
 
+/** Usuario con correo y último acceso (admin_list_users; el panel no lee auth.users). */
+export interface UserAccount extends Profile {
+  email: string | null;
+  last_sign_in_at: string | null;
+}
+
 export interface BusinessSettings {
   deposit_pct: string;
   timezone: string;

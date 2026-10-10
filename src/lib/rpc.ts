@@ -23,6 +23,7 @@ import type {
   Profile,
   Quote,
   QuoteItemInput,
+  UserAccount,
   UserRole,
 } from "./types";
 
@@ -191,6 +192,25 @@ export const rpc = {
   },
   getWasteReport(from: string, to: string) {
     return call<WasteRow[]>("get_waste_report", { p_from: from, p_to: to });
+  },
+
+  adminListUsers() {
+    return call<UserAccount[]>("admin_list_users", {});
+  },
+
+  /** Crea la cuenta de Auth ya confirmada y el perfil activo (Plan Correcciones v2, C7). */
+  adminCreateUser(input: { email: string; fullName: string; role: UserRole; password: string }) {
+    return call<{ id: string; email: string; full_name: string; role: UserRole }>("admin_create_user", {
+      p_email: input.email,
+      p_full_name: input.fullName,
+      p_role: input.role,
+      p_password: input.password,
+    });
+  },
+
+  /** Cambia la contraseña y cierra las sesiones abiertas de esa cuenta. */
+  adminResetPassword(userId: string, password: string) {
+    return call<void>("admin_reset_password", { p_user_id: userId, p_password: password });
   },
 
   adminUpdateUser(
