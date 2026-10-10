@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth";
 import { Button, TextField } from "../../components/ui";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 export function LoginPage() {
   const status = useAuthStore((s) => s.status);
@@ -36,7 +37,10 @@ export function LoginPage() {
   const canSubmit = /^\S+@\S+\.\S+$/.test(email.trim()) && password.length > 0;
 
   return (
-    <main className="flex min-h-full items-center justify-center bg-surface-1 p-6">
+    <main className="relative flex min-h-full items-center justify-center bg-surface-1 p-6">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <form
         onSubmit={onSubmit}
         noValidate
@@ -45,7 +49,7 @@ export function LoginPage() {
       >
         <div className="flex flex-col items-center gap-3">
           <img src="/brand/logo-full.png" alt="Imprenta Escalante" className="h-14 w-auto" />
-          <h1 className="text-lg font-bold text-ink-strong">Panel administrativo</h1>
+          <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Panel administrativo</h1>
         </div>
 
         {reason && !error && (

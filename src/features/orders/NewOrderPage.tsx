@@ -160,7 +160,7 @@ export function NewOrderPage() {
   return (
     <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-5xl flex-col gap-4 md:gap-6" data-testid="new-order-form">
       <div>
-        <h1 className="text-xl font-bold text-ink-strong">Nuevo pedido</h1>
+        <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Nuevo pedido</h1>
         <p className="text-sm text-ink-muted">
           Captura de mostrador. Los precios y el anticipo los calcula el sistema con la lista oficial.
         </p>

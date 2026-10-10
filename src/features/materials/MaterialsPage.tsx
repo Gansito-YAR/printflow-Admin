@@ -66,7 +66,7 @@ export function MaterialsPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-xl font-bold text-ink-strong">Insumos e inventario</h1>
+          <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Insumos e inventario</h1>
           <p className="text-sm text-ink-muted">
             El costo unitario es el promedio ponderado de las compras. Existencias y costo cambian solo con movimientos.
           </p>

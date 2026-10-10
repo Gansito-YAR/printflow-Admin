@@ -14,6 +14,7 @@ import { METHOD_LABEL, itemQuantityLabel } from "../../lib/types";
 import { formatMoney, isZero } from "../../utils/money";
 import { formatDateTime } from "../../utils/dates";
 import { MM, pdfTheme } from "./pdfTheme";
+import { formatPhone } from "../../utils/phone";
 
 const QR_BOX = 40 * MM;
 
@@ -108,7 +109,7 @@ export function RemissionDocument({
           </Text>
           <Text>
             <Text style={s.bold}>Tel: </Text>
-            {order.customer?.phone_number ?? "—"}
+            {formatPhone(order.customer?.phone_number)}
           </Text>
         </View>
 

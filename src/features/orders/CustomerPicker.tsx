@@ -7,6 +7,7 @@ import { TIER_LABEL } from "../../lib/types";
 import { searchCustomers } from "../../lib/queries";
 import { Button, Modal, Spinner, TextField } from "../../components/ui";
 import { CustomerForm } from "../customers/CustomerForm";
+import { formatPhone } from "../../utils/phone";
 
 export function CustomerPicker({
   value,
@@ -49,7 +50,7 @@ export function CustomerPicker({
         <div>
           <p className="font-semibold text-ink-strong">{value.full_name}</p>
           <p className="text-sm text-ink-muted">
-            {value.phone_number} · Tarifa {TIER_LABEL[value.pricing_tier]}
+            {formatPhone(value.phone_number)} · Tarifa {TIER_LABEL[value.pricing_tier]}
           </p>
         </div>
         <Button variant="secondary" onClick={() => onChange(null)} disabled={disabled}>
@@ -92,7 +93,7 @@ export function CustomerPicker({
               >
                 <span className="font-semibold text-ink-strong">{c.full_name}</span>
                 <span className="text-sm text-ink-muted">
-                  {c.phone_number} · {TIER_LABEL[c.pricing_tier]}
+                  {formatPhone(c.phone_number)} · {TIER_LABEL[c.pricing_tier]}
                 </span>
               </button>
             </li>

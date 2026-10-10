@@ -41,7 +41,7 @@ export function SettingsPage() {
   return (
     <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-2xl flex-col gap-4 md:gap-6" data-testid="settings-form">
       <div>
-        <h1 className="text-xl font-bold text-ink-strong">Configuración</h1>
+        <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Configuración</h1>
         <p className="text-sm text-ink-muted">Reglas del negocio que aplica la base de datos a todos los pedidos.</p>
       </div>
       <section className="flex flex-col gap-4 rounded-md border border-line bg-surface-0 p-4 md:p-6">

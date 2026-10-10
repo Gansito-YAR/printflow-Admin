@@ -57,7 +57,7 @@ export function UsersPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold text-ink-strong">Usuarios</h1>
+        <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Usuarios</h1>
         <p className="text-sm text-ink-muted">
           Las cuentas nuevas se crean en Supabase (Authentication → Users) y llegan aquí como Instalador inactivo.
         </p>

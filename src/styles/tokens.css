@@ -243,3 +243,52 @@
   --transition-fast: 150ms ease;
   --transition-theme: 200ms ease;
 }
+
+/* ============================================================
+ * Plan Correcciones v2 — C2 tipografía y C3 colores por estado
+ * ========================================================== */
+
+:root {
+  /* Primitivas extra para estados del pedido */
+  --info-50:  #E8F1FC;
+  --info-300: #7AB8F5;
+  --info-700: #0D4FA0;
+  --info-900: #0E2A4D;
+  --teal-50:  #E0F4F1;
+  --teal-300: #5CC9BA;
+  --teal-700: #00695C;
+  --teal-900: #08332E;
+
+  /* Tipografía: Barlow (texto, cifras tabulares) + Anton (títulos) */
+  --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Anton", "Arial Narrow", "Barlow", system-ui, sans-serif;
+}
+
+/* Estado del pedido: color + icono + texto (el color nunca es la única señal).
+ * Sin rojo: el rojo queda reservado a la urgencia "VENCIDO". */
+:root,
+:root[data-theme="light"] {
+  --status-pending-bg: #FFF3E0;   --status-pending-ink: var(--warning-700);  --status-pending-line: var(--warning-500);
+  --status-production-bg: var(--info-50); --status-production-ink: var(--info-700); --status-production-line: var(--info-700);
+  --status-ready-bg: var(--teal-50); --status-ready-ink: var(--teal-700);     --status-ready-line: var(--teal-700);
+  --status-delivered-bg: #E8F5E9; --status-delivered-ink: var(--success-700); --status-delivered-line: var(--success-700);
+  --status-cancelled-bg: var(--neutral-100); --status-cancelled-ink: var(--neutral-600); --status-cancelled-line: var(--neutral-300);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --status-pending-bg: #3D2405;   --status-pending-ink: var(--brand-300);   --status-pending-line: var(--warning-500);
+    --status-production-bg: var(--info-900); --status-production-ink: var(--info-300); --status-production-line: var(--info-300);
+    --status-ready-bg: var(--teal-900); --status-ready-ink: var(--teal-300);   --status-ready-line: var(--teal-300);
+    --status-delivered-bg: #123A16; --status-delivered-ink: var(--success-300); --status-delivered-line: var(--success-300);
+    --status-cancelled-bg: var(--neutral-800); --status-cancelled-ink: var(--neutral-300); --status-cancelled-line: var(--neutral-600);
+  }
+}
+
+:root[data-theme="dark"] {
+  --status-pending-bg: #3D2405;   --status-pending-ink: var(--brand-300);   --status-pending-line: var(--warning-500);
+  --status-production-bg: var(--info-900); --status-production-ink: var(--info-300); --status-production-line: var(--info-300);
+  --status-ready-bg: var(--teal-900); --status-ready-ink: var(--teal-300);   --status-ready-line: var(--teal-300);
+  --status-delivered-bg: #123A16; --status-delivered-ink: var(--success-300); --status-delivered-line: var(--success-300);
+  --status-cancelled-bg: var(--neutral-800); --status-cancelled-ink: var(--neutral-300); --status-cancelled-line: var(--neutral-600);
+}

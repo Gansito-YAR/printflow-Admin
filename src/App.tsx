@@ -64,7 +64,19 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-      <Toaster position={desktop ? "top-right" : "top-center"} toastOptions={{ duration: 4000 }} />
+      <Toaster
+        position={desktop ? "top-right" : "top-center"}
+        toastOptions={{
+          duration: 4000,
+          // Sigue el tema: superficie y texto del panel, no el blanco por defecto.
+          style: {
+            background: "var(--surface-0)",
+            color: "var(--ink-strong)",
+            border: "1px solid var(--border-hairline)",
+            fontFamily: "var(--font-sans)",
+          },
+        }}
+      />
     </ErrorBoundary>
   );
 }

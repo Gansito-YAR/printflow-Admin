@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { OrderStatus, OrderSummary } from "../../lib/types";
 import { STATUS_LABEL } from "../../lib/types";
+import { STATUS_ICON, statusVars } from "../../components/status";
+
+function LaneIcon({ status }: { status: OrderStatus }) {
+  const Icon = STATUS_ICON[status];
+  return <Icon size={16} aria-hidden />;
+}
 import { useSettingsStore } from "../../store/settings";
 import { urgencyOf } from "../../utils/dates";
 import { EmptyState, ErrorPanel, SelectField, Spinner, TextField } from "../../components/ui";
@@ -65,7 +71,7 @@ export function KanbanPage() {
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 md:gap-4">
         <div>
-          <h1 className="text-lg font-bold text-ink-strong md:text-xl">Tablero de producción</h1>
+          <h1 className="text-xl font-display font-normal tracking-wide text-ink-strong md:text-2xl">Tablero de producción</h1>
           <p className="text-sm text-ink-muted">Ordenado por fecha pactada de entrega.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -165,9 +171,15 @@ export function KanbanPage() {
                   status === mobileLane ? "flex" : "hidden"
                 }`}
               >
-                <header className="flex items-center justify-between px-3 py-2">
-                  <h2 className="text-sm font-bold text-ink-strong">{STATUS_LABEL[status]}</h2>
-                  <span className="rounded-sm bg-surface-0 px-2 text-xs font-bold text-ink-strong">{lane.length}</span>
+                <header
+                  className="flex items-center justify-between rounded-t-md border-t-4 px-3 py-2"
+                  style={{ borderTopColor: statusVars(status).line }}
+                >
+                  <h2 className="flex items-center gap-1.5 text-sm font-bold" style={{ color: statusVars(status).ink }}>
+                    <LaneIcon status={status} />
+                    {STATUS_LABEL[status]}
+                  </h2>
+                  <span className="rounded-sm bg-surface-0 px-2 text-xs font-bold text-ink-strong tabular">{lane.length}</span>
                 </header>
                 <ErrorBoundary message="Error cargando este carril.">
                   <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 pt-0">

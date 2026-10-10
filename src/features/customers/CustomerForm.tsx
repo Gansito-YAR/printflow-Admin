@@ -7,16 +7,11 @@ import { toAppError } from "../../lib/errors";
 import type { Customer, PricingTier } from "../../lib/types";
 import { TIER_LABEL } from "../../lib/types";
 import { Button, SelectField, TextAreaField, TextField } from "../../components/ui";
+import { PhoneField, type PhoneValue } from "../../components/PhoneField";
+import { checkPhone, phoneMessage, splitStored, DEFAULT_COUNTRY } from "../../utils/phone";
 
-/**
- * Normaliza a E.164 sin "+": solo dígitos. Un número mexicano de 10 dígitos
- * recibe el prefijo 52. Es la llave con la que n8n identificará al cliente.
- */
-export function normalizePhone(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "");
-  const full = digits.length === 10 ? `52${digits}` : digits;
-  return /^\d{10,15}$/.test(full) ? full : null;
-}
+// El teléfono se guarda en E.164 sin "+" (llave de n8n); ver utils/phone.ts.
+export { normalizePhone } from "../../utils/phone";
 
 const CUSTOMER_SELECT = "id, phone_number, full_name, pricing_tier, is_active, notes, created_at";
 
@@ -29,7 +24,9 @@ export function CustomerForm({
   onSaved: (customer: Customer) => void;
   onCancel?: () => void;
 }) {
-  const [phone, setPhone] = useState(customer?.phone_number ?? "");
+  const [phone, setPhone] = useState<PhoneValue>(() =>
+    customer ? splitStored(customer.phone_number) : { country: DEFAULT_COUNTRY, national: "" },
+  );
   const [name, setName] = useState(customer?.full_name ?? "");
   const [tier, setTier] = useState<PricingTier>(customer?.pricing_tier ?? "RETAIL");
   const [notes, setNotes] = useState(customer?.notes ?? "");
@@ -43,9 +40,10 @@ export function CustomerForm({
     e.stopPropagation(); // puede vivir dentro de otro formulario
     if (inFlight.current) return;
 
-    const normalized = normalizePhone(phone);
+    const check = checkPhone(phone.national, phone.country);
+    const normalized = check.ok ? check.e164 : null;
     const next: typeof errors = {};
-    if (!normalized) next.phone = "Teléfono inválido: 10 dígitos (México) o el número completo con lada internacional.";
+    if (!check.ok) next.phone = phoneMessage(check) ?? "Teléfono inválido.";
     if (!name.trim()) next.name = "El nombre es obligatorio.";
     setErrors(next);
     if (next.phone || next.name || !normalized) return;
@@ -67,9 +65,17 @@ export function CustomerForm({
 
     if (result.error) {
       const appError = toAppError(result.error);
-      setErrors({
-        server: appError.code === "DUPLICATE" ? "Ya existe un cliente con ese teléfono." : appError.userText,
-      });
+      if (appError.code === "DUPLICATE") {
+        // Se dice con quién choca, junto al campo, para no duplicar al cliente.
+        const { data: existing } = await supabase.from("customers").select("full_name").eq("phone_number", normalized).maybeSingle();
+        setErrors({
+          phone: existing
+            ? `Este teléfono ya está registrado a nombre de «${(existing as { full_name: string }).full_name}».`
+            : "Ya existe un cliente con ese teléfono.",
+        });
+      } else {
+        setErrors({ server: appError.userText });
+      }
       return;
     }
     toast.success(customer ? "Cliente actualizado." : "Cliente registrado.");
@@ -78,13 +84,14 @@ export function CustomerForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4" data-testid="customer-form">
-      <TextField
+      <PhoneField
         label="Teléfono (WhatsApp)"
-        inputMode="tel"
         value={phone}
-        onChange={(e) => setPhone(e.target.value)}
+        onChange={(v) => {
+          setPhone(v);
+          if (errors.phone) setErrors((e) => ({ ...e, phone: undefined }));
+        }}
         error={errors.phone}
-        hint="10 dígitos; se guarda con lada 52."
         disabled={saving}
         required
       />

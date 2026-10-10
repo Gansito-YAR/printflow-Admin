@@ -2,6 +2,7 @@
 //   Escritorio (≥ lg): menú lateral oscuro fijo + encabezado con el usuario.
 //   Celular y tablet: el menú vive en un cajón que abre el botón ☰.
 
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { fetchLowStockCount } from "../lib/queries";
@@ -182,10 +183,13 @@ export function AdminShell() {
           <span className="hidden text-sm text-ink-base md:inline lg:ml-auto" data-testid="current-user">
             {profile?.full_name} <span className="text-ink-muted">· Administrador</span>
           </span>
+          <div className="ml-auto lg:ml-0">
+            <ThemeToggle />
+          </div>
           <button
             type="button"
             onClick={() => void signOut()}
-            className="ml-auto hidden min-h-10 rounded-md border border-line px-3 text-sm font-semibold text-ink-strong hover:bg-surface-2 md:inline-flex md:items-center lg:ml-0"
+            className="hidden min-h-10 rounded-md border border-line px-3 text-sm font-semibold text-ink-strong hover:bg-surface-2 md:inline-flex md:items-center lg:ml-0"
           >
             Cerrar sesión
           </button>

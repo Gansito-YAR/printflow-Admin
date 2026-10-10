@@ -16,6 +16,7 @@ import type { OrderStatus } from "../lib/types";
 import { STATUS_LABEL } from "../lib/types";
 import { URGENCY_LABEL, type Urgency } from "../utils/dates";
 import { lockScroll } from "../utils/scrollLock";
+import { STATUS_ICON, statusVars } from "./status";
 
 // ----- Spinner ---------------------------------------------------------------
 
@@ -293,8 +294,17 @@ export function UrgencyBadge({ urgency }: { urgency: Urgency }) {
 }
 
 export function StatusBadge({ status }: { status: OrderStatus }) {
+  const Icon = STATUS_ICON[status];
+  const v = statusVars(status);
   return (
-    <span className="inline-block rounded-sm border border-line bg-surface-2 px-2 py-0.5 text-xs font-semibold text-ink-strong">
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-sans text-xs font-semibold tracking-normal ${
+        status === "CANCELLED" ? "line-through decoration-1" : ""
+      }`}
+      style={{ backgroundColor: v.bg, color: v.ink, borderColor: v.line }}
+      data-testid={`status-${status}`}
+    >
+      <Icon size={13} aria-hidden className="shrink-0" />
       {STATUS_LABEL[status]}
     </span>
   );

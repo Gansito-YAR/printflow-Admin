@@ -78,7 +78,10 @@ export async function fetchProducts(onlyActive = false): Promise<Product[]> {
 export async function searchCustomers(term: string, onlyActive = true): Promise<Customer[]> {
   let query = supabase.from("customers").select(CUSTOMER_SELECT).order("full_name").limit(50);
   const clean = term.trim().replace(/[%,()]/g, "");
-  if (clean) query = query.or(`full_name.ilike.%${clean}%,phone_number.ilike.%${clean}%`);
+  // El teléfono se guarda solo con dígitos: "+52 667 123" busca "52667123".
+  const digits = clean.replace(/\D/g, "");
+  const phoneTerm = digits.length >= 3 ? digits : clean;
+  if (clean) query = query.or(`full_name.ilike.%${clean}%,phone_number.ilike.%${phoneTerm}%`);
   if (onlyActive) query = query.eq("is_active", true);
   return unwrap<Customer[]>(await query);
 }

@@ -40,7 +40,7 @@ export function ProductsPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-ink-strong">Productos y precios</h1>
+          <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Productos y precios</h1>
           <p className="text-sm text-ink-muted">Cambiar un precio no afecta pedidos ya creados.</p>
         </div>
         <Button onClick={() => setEditing("new")}>+ Producto</Button>

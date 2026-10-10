@@ -64,7 +64,7 @@ export function OrderHistoryPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold text-ink-strong">Pedidos</h1>
+        <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Pedidos</h1>
         <p className="text-sm text-ink-muted">Todos los pedidos de todos los estados, del más reciente al más antiguo.</p>
       </div>
       <FilterBar active={[term.trim(), status !== "ALL", from, to].filter(Boolean).length}>

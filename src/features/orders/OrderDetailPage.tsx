@@ -18,6 +18,7 @@ import { AdvancedActions } from "../supervisor/AdvancedActions";
 import { DataList } from "../../components/DataList";
 import { StickyActions } from "../../components/StickyActions";
 import { CostingSection } from "./CostingSection";
+import { formatPhone } from "../../utils/phone";
 
 const NEXT: Partial<Record<OrderStatus, "IN_PRODUCTION" | "READY_FOR_DELIVERY">> = {
   PENDING_DEPOSIT: "IN_PRODUCTION",
@@ -91,11 +92,11 @@ export function OrderDetailPage() {
           <Link to="/" className="inline-flex min-h-11 items-center text-sm text-brand-accent underline md:min-h-0">
             ← Tablero
           </Link>
-          <h1 className="mt-1 flex flex-wrap items-center gap-2 text-xl font-bold text-ink-strong md:gap-3">
+          <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-display font-normal tracking-wide text-ink-strong md:gap-3">
             {order.folio} <StatusBadge status={order.status} />
           </h1>
           <p className="break-words text-sm text-ink-muted">
-            {order.customer?.full_name} · {order.customer?.phone_number}
+            {order.customer?.full_name} · {formatPhone(order.customer?.phone_number)}
             {order.customer && ` · Tarifa ${TIER_LABEL[order.customer.pricing_tier]}`}
           </p>
           <p className="text-sm text-ink-base">Entrega pactada: {formatDateLong(order.promised_date, timezone)}</p>

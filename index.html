@@ -6,6 +6,13 @@
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/brand/logo-mark.png" />
     <title>PrintFlow — Panel administrativo</title>
+    <!-- Aplica el tema guardado antes del primer pintado (evita el destello claro). -->
+    <script>
+      try {
+        var t = localStorage.getItem("printflow-admin-theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

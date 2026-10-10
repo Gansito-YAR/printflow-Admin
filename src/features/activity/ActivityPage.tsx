@@ -86,7 +86,7 @@ export function ActivityPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold text-ink-strong">Bitácora general</h1>
+        <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Bitácora general</h1>
         <p className="text-sm text-ink-muted">
           Registro de todas las acciones del sistema: quién, cuándo y qué cambió. Solo lectura: no se puede editar ni borrar.
         </p>
