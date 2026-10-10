@@ -151,7 +151,10 @@ export function KanbanPage() {
                 }`}
                 data-testid={`lane-tab-${status}`}
               >
-                {STATUS_LABEL[status]} <span className="tabular">({n})</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <LaneIcon status={status} />
+                  {STATUS_LABEL[status]} <span className="tabular">({n})</span>
+                </span>
               </button>
             );
           })}

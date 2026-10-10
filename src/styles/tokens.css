@@ -292,3 +292,17 @@
   --status-delivered-bg: #123A16; --status-delivered-ink: var(--success-300); --status-delivered-line: var(--success-300);
   --status-cancelled-bg: var(--neutral-800); --status-cancelled-ink: var(--neutral-300); --status-cancelled-line: var(--neutral-600);
 }
+
+/* Controles nativos (barras de desplazamiento, select, fecha) siguen el tema. */
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
