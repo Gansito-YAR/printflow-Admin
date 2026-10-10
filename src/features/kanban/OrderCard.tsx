@@ -3,6 +3,8 @@ import type { OrderSummary } from "../../lib/types";
 import { formatMoney, isZero } from "../../utils/money";
 import { formatDateTime, urgencyOf } from "../../utils/dates";
 import { Button, URGENCY_CARD, UrgencyBadge } from "../../components/ui";
+import { ExceedsBadge } from "../../components/ExceedsBadge";
+import { useOrdersExceeding } from "../../store/notifications";
 
 export function itemsSummary(items: OrderSummary["items"]): string {
   const sorted = [...items].sort((a, b) => a.line_no - b.line_no);
@@ -26,6 +28,7 @@ export function OrderCard({
   const urgency = delivered ? null : urgencyOf(order.promised_date, now, timezone);
   const paid = isZero(order.balance_due);
   const onCredit = delivered && order.delivery_override && !paid;
+  const exceeds = useOrdersExceeding().has(order.id);
 
   return (
     <article
@@ -47,6 +50,12 @@ export function OrderCard({
           </span>
         )}
       </div>
+
+      {exceeds && (
+        <div>
+          <ExceedsBadge compact />
+        </div>
+      )}
 
       <div>
         <p className="font-semibold text-ink-strong">{order.customer?.full_name ?? "Cliente no disponible"}</p>

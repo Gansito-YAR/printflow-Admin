@@ -4,15 +4,16 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
-import { fetchProducts } from "../../lib/queries";
+import { fetchCategories, fetchProducts } from "../../lib/queries";
 import { toAppError } from "../../lib/errors";
 import type { Product, ProductCategory, PricingUnit } from "../../lib/types";
-import { CATEGORY_LABEL, UNIT_LABEL } from "../../lib/types";
+import { UNIT_LABEL } from "../../lib/types";
 import { formatMoney, isGreater, parseAmountInput } from "../../utils/money";
 import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextField } from "../../components/ui";
 import { DataList } from "../../components/DataList";
 import { parseQuantity } from "../../utils/quantity";
 import { RecipeModal } from "./RecipeModal";
+import { CategoriesModal, createCategory } from "./CategoriesModal";
 
 export function ProductsPage() {
   const [rows, setRows] = useState<Product[]>([]);
@@ -20,17 +21,28 @@ export function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
   const [recipeOf, setRecipeOf] = useState<Product | null>(null);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [managing, setManaging] = useState(false);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      setCategories(await fetchCategories(false));
+    } catch (err) {
+      toast.error(toAppError(err).userText);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
-      setRows(await fetchProducts(false));
+      const [products] = await Promise.all([fetchProducts(false), loadCategories()]);
+      setRows(products);
       setError(null);
     } catch (err) {
       setError(toAppError(err).userText);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadCategories]);
 
   useEffect(() => {
     void load();
@@ -43,7 +55,12 @@ export function ProductsPage() {
           <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Productos y precios</h1>
           <p className="text-sm text-ink-muted">Cambiar un precio no afecta pedidos ya creados.</p>
         </div>
-        <Button onClick={() => setEditing("new")}>+ Producto</Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="secondary" onClick={() => setManaging(true)} data-testid="manage-categories">
+            Categorías
+          </Button>
+          <Button onClick={() => setEditing("new")}>+ Producto</Button>
+        </div>
       </div>
       {error && <ErrorPanel message={error} onRetry={() => void load()} />}
       {loading ? (
@@ -69,7 +86,7 @@ export function ProductsPage() {
                 </span>
               ),
             },
-            { key: "cat", header: "Categoría", hideOnTablet: true, render: (p) => CATEGORY_LABEL[p.category] },
+            { key: "cat", header: "Categoría", hideOnTablet: true, render: (p) => p.category?.name ?? "—" },
             { key: "unit", header: "Unidad", render: (p) => UNIT_LABEL[p.pricing_unit] },
             { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.retail_price)}</span> },
             { key: "wholesale", header: "Mayoreo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.wholesale_price)}</span> },
@@ -88,11 +105,21 @@ export function ProductsPage() {
           )}
         />
       )}
+      {managing && (
+        <CategoriesModal
+          categories={categories}
+          products={rows}
+          onChanged={() => void load()}
+          onClose={() => setManaging(false)}
+        />
+      )}
       {recipeOf && <RecipeModal product={recipeOf} onClose={() => setRecipeOf(null)} />}
       {editing && (
         <Modal title={editing === "new" ? "Producto nuevo" : "Editar producto"} onClose={() => setEditing(null)}>
           <ProductForm
             product={editing === "new" ? undefined : editing}
+            categories={categories}
+            onCategoryCreated={(c) => setCategories((list) => [...list, c])}
             onCancel={() => setEditing(null)}
             onSaved={() => {
               setEditing(null);
@@ -105,10 +132,39 @@ export function ProductsPage() {
   );
 }
 
-function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSaved: () => void; onCancel: () => void }) {
+const NEW_CATEGORY = "__nueva__";
+
+function ProductForm({
+  product,
+  categories,
+  onCategoryCreated,
+  onSaved,
+  onCancel,
+}: {
+  product?: Product;
+  categories: ProductCategory[];
+  onCategoryCreated: (c: ProductCategory) => void;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
   const [sku, setSku] = useState(product?.sku ?? "");
   const [name, setName] = useState(product?.name ?? "");
-  const [category, setCategory] = useState<ProductCategory>(product?.category ?? "GRAN_FORMATO");
+  const selectable = categories.filter((c) => c.is_active || c.id === product?.category_id);
+  const [categoryId, setCategoryId] = useState<string>(product?.category_id ?? selectable[0]?.id ?? "");
+  const [newCategory, setNewCategory] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+
+  async function onCreateCategory() {
+    setCreatingCategory(true);
+    const result = await createCategory(newCategory, categories);
+    setCreatingCategory(false);
+    if (!result.ok) return setCategoryError(result.error);
+    onCategoryCreated(result.category);
+    setCategoryId(result.category.id);
+    setNewCategory("");
+    toast.success(`Categoría «${result.category.name}» creada.`);
+  }
   const [unit, setUnit] = useState<PricingUnit>(product?.pricing_unit ?? "UNIT");
   const [retail, setRetail] = useState(product?.retail_price ?? "");
   const [wholesale, setWholesale] = useState(product?.wholesale_price ?? "");
@@ -126,6 +182,7 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
     const w = parseAmountInput(wholesale);
     const m = minQty.trim() ? parseAmountInput(minQty) : null;
     if (!sku.trim() || !name.trim()) return setError("SKU y nombre son obligatorios.");
+    if (!categoryId || categoryId === NEW_CATEGORY) return setError("Elija una categoría o termine de crear la nueva.");
     if (!r.ok) return setError(`Menudeo: ${r.error}`);
     if (!w.ok) return setError(`Mayoreo: ${w.error}`);
     if (isGreater(w.value, r.value)) return setError("El precio de mayoreo no puede ser mayor al de menudeo.");
@@ -139,7 +196,7 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
     const payload = {
       sku: sku.trim(),
       name: name.trim(),
-      category,
+      category_id: categoryId,
       // La unidad de cobro no se cambia tras crear el producto.
       ...(product ? {} : { pricing_unit: unit }),
       retail_price: r.value,
@@ -167,13 +224,65 @@ function ProductForm({ product, onSaved, onCancel }: { product?: Product; onSave
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} disabled={saving} required />
         <TextField label="Nombre" value={name} onChange={(e) => setName(e.target.value)} disabled={saving} required />
-        <SelectField label="Categoría" value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)} disabled={saving}>
-          {(Object.keys(CATEGORY_LABEL) as ProductCategory[]).map((c) => (
-            <option key={c} value={c}>
-              {CATEGORY_LABEL[c]}
-            </option>
-          ))}
-        </SelectField>
+        <div className="flex flex-col gap-2">
+          <SelectField
+            label="Categoría"
+            value={categoryId}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setCategoryError(null);
+            }}
+            disabled={saving}
+            data-testid="product-category"
+          >
+            {selectable.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.is_active ? "" : " (inactiva)"}
+              </option>
+            ))}
+            <option value={NEW_CATEGORY}>+ Nueva categoría…</option>
+          </SelectField>
+          {categoryId === NEW_CATEGORY && (
+            <div className="flex flex-col gap-2 rounded-md border border-line bg-surface-1 p-3">
+              <TextField
+                label="Nombre de la nueva categoría"
+                value={newCategory}
+                onChange={(e) => {
+                  setNewCategory(e.target.value);
+                  setCategoryError(null);
+                }}
+                onKeyDown={(e) => {
+                  // Dentro del formulario de producto: Enter crea la categoría, no guarda el producto.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void onCreateCategory();
+                  }
+                }}
+                maxLength={40}
+                error={categoryError}
+                autoFocus
+                data-testid="new-category-name"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setCategoryId(selectable[0]?.id ?? "");
+                    setNewCategory("");
+                    setCategoryError(null);
+                  }}
+                  disabled={creatingCategory}
+                >
+                  Cancelar
+                </Button>
+                <Button loading={creatingCategory} onClick={() => void onCreateCategory()} data-testid="create-category">
+                  Crear categoría
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
         <SelectField
           label="Unidad de cobro"
           value={unit}

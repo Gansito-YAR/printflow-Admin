@@ -9,9 +9,10 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { rpc } from "../../lib/rpc";
 import { fetchProducts } from "../../lib/queries";
+import { groupByCategory } from "../../utils/categories";
 import { toAppError } from "../../lib/errors";
-import type { Customer, Product, ProductCategory, Quote, QuoteItemInput } from "../../lib/types";
-import { CATEGORY_LABEL, TIER_LABEL, UNIT_LABEL } from "../../lib/types";
+import type { Customer, Product, Quote, QuoteItemInput } from "../../lib/types";
+import { TIER_LABEL, UNIT_LABEL } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
 import { fromDateTimeLocal, toDateTimeLocal } from "../../utils/dates";
@@ -19,6 +20,7 @@ import { Button, ErrorPanel, Spinner, TextAreaField, TextField } from "../../com
 import { CustomerPicker } from "./CustomerPicker";
 import { StickyActions } from "../../components/StickyActions";
 import { EstimatePanel } from "./CostingSection";
+import { MaterialsNotice } from "./MaterialsNotice";
 
 interface Row {
   key: string;
@@ -73,11 +75,7 @@ export function NewOrderPage() {
   }, []);
 
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
-  const byCategory = useMemo(() => {
-    const groups = new Map<ProductCategory, Product[]>();
-    for (const p of products) groups.set(p.category, [...(groups.get(p.category) ?? []), p]);
-    return groups;
-  }, [products]);
+  const byCategory = useMemo(() => groupByCategory(products), [products]);
 
   const items = useMemo(() => toItems(rows, productMap), [rows, productMap]);
 
@@ -193,8 +191,8 @@ export function NewOrderPage() {
                     className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
                   >
                     <option value="">Seleccione…</option>
-                    {[...byCategory.entries()].map(([cat, list]) => (
-                      <optgroup key={cat} label={CATEGORY_LABEL[cat]}>
+                    {byCategory.map(({ name: cat, products: list }) => (
+                      <optgroup key={cat} label={cat}>
                         {list.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name} ({UNIT_LABEL[p.pricing_unit]})
@@ -314,6 +312,7 @@ export function NewOrderPage() {
               <span className="text-right font-semibold text-ink-strong">{formatMoney(quote.deposit_required)}</span>
             </div>
           ) : null}
+          {quote && !quoting && <MaterialsNotice lines={quote.items} />}
           {customer && items && quote && !quoting && <EstimatePanel customerId={customer.id} items={items} />}
           <p className="text-xs text-ink-muted">
             El pedido nace como &quot;Pendiente de anticipo&quot;. No pasa a producción sin el anticipo mínimo o una

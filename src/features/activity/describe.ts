@@ -47,6 +47,7 @@ const FIELD_LABEL: Record<string, string> = {
   is_active: "Activo",
   notes: "Notas",
   category: "Categoría",
+  category_id: "Categoría",
   pricing_unit: "Unidad de cobro",
   retail_price: "Precio menudeo",
   wholesale_price: "Precio mayoreo",

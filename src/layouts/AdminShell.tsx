@@ -3,6 +3,8 @@
 //   Celular y tablet: el menú vive en un cajón que abre el botón ☰.
 
 import { ThemeToggle } from "../components/ThemeToggle";
+import { NotificationBell } from "../components/NotificationBell";
+import { useNotificationsStore } from "../store/notifications";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { fetchLowStockCount } from "../lib/queries";
@@ -17,6 +19,7 @@ const NAV = [
   { to: "/clientes", label: "Clientes", end: false },
   { to: "/productos", label: "Productos y recetas", end: false },
   { to: "/insumos", label: "Insumos", end: false },
+  { to: "/notificaciones", label: "Notificaciones", end: false },
   { to: "/utilidad", label: "Utilidad y mermas", end: false },
   { to: "/bitacora", label: "Bitácora", end: false },
   { to: "/usuarios", label: "Usuarios", end: false },
@@ -73,6 +76,14 @@ export function AdminShell() {
   const signOut = useAuthStore((s) => s.signOut);
   const lowStock = useLowStock();
   const { pathname } = useLocation();
+  // Notificaciones: suscripción en vivo mientras el panel está abierto; además se
+  // refrescan al navegar (los faltantes previstos y el stock bajo no emiten evento).
+  const startNotifications = useNotificationsStore((st) => st.start);
+  const refreshNotifications = useNotificationsStore((st) => st.refresh);
+  useEffect(() => startNotifications(), [startNotifications]);
+  useEffect(() => {
+    void refreshNotifications();
+  }, [pathname, refreshNotifications]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -183,7 +194,8 @@ export function AdminShell() {
           <span className="hidden text-sm text-ink-base md:inline lg:ml-auto" data-testid="current-user">
             {profile?.full_name} <span className="text-ink-muted">· Administrador</span>
           </span>
-          <div className="ml-auto lg:ml-0">
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <NotificationBell />
             <ThemeToggle />
           </div>
           <button

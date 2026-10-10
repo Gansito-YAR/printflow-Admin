@@ -19,6 +19,9 @@ import { DataList } from "../../components/DataList";
 import { StickyActions } from "../../components/StickyActions";
 import { CostingSection } from "./CostingSection";
 import { formatPhone } from "../../utils/phone";
+import { useShortageGuard } from "./useShortageGuard";
+import { ExceedsBadge } from "../../components/ExceedsBadge";
+import { useOrdersExceeding } from "../../store/notifications";
 
 const NEXT: Partial<Record<OrderStatus, "IN_PRODUCTION" | "READY_FOR_DELIVERY">> = {
   PENDING_DEPOSIT: "IN_PRODUCTION",
@@ -56,9 +59,17 @@ export function OrderDetailPage() {
     void load();
   }, [load]);
 
+  const { confirmProduction, modal: shortageModal } = useShortageGuard();
+  const exceeding = useOrdersExceeding();
+
   async function advance(to: "IN_PRODUCTION" | "READY_FOR_DELIVERY") {
     if (!order || inFlight.current) return;
     inFlight.current = true;
+    // C6: al iniciar producción se descuentan insumos; si no alcanzan, se confirma antes.
+    if (to === "IN_PRODUCTION" && !(await confirmProduction(order.id))) {
+      inFlight.current = false;
+      return;
+    }
     setAdvancing(true);
     try {
       await rpc.advanceOrderStatus(order.id, to);
@@ -87,6 +98,7 @@ export function OrderDetailPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-6 md:gap-6">
+      {shortageModal}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0">
           <Link to="/" className="inline-flex min-h-11 items-center text-sm text-brand-accent underline md:min-h-0">
@@ -94,6 +106,7 @@ export function OrderDetailPage() {
           </Link>
           <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-display font-normal tracking-wide text-ink-strong md:gap-3">
             {order.folio} <StatusBadge status={order.status} />
+            {exceeding.has(order.id) && <ExceedsBadge />}
           </h1>
           <p className="break-words text-sm text-ink-muted">
             {order.customer?.full_name} · {formatPhone(order.customer?.phone_number)}

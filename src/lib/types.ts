@@ -16,7 +16,13 @@ export type OrderStatus =
 export type PaymentMethod = "CASH" | "TRANSFER" | "CARD";
 export type PricingTier = "RETAIL" | "WHOLESALE";
 export type PricingUnit = "UNIT" | "M2";
-export type ProductCategory = "GRAN_FORMATO" | "PAPELERIA" | "PROMOCIONALES";
+/** Categoría administrable (Plan Correcciones v2, C5). Se desactiva, no se borra. */
+export interface ProductCategory {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+}
 export type UserRole = "ADMIN" | "INSTALLER";
 
 export type OrderEventType =
@@ -32,7 +38,8 @@ export type OrderEventType =
   | "EXTRA_COST_VOIDED"
   | "MATERIALS_RETURNED"
   | "DELIVERY_OVERRIDE"
-  | "RECIPE_CHANGED";
+  | "RECIPE_CHANGED"
+  | "STOCK_SHORTAGE";
 
 /** Eventos cuyo monto es un costo (confidencial): la bitácora no lo muestra. */
 export const COST_EVENTS: ReadonlySet<OrderEventType> = new Set([
@@ -70,7 +77,8 @@ export interface Product {
   id: string;
   sku: string;
   name: string;
-  category: ProductCategory;
+  category_id: string;
+  category: Pick<ProductCategory, "id" | "name" | "sort_order"> | null;
   pricing_unit: PricingUnit;
   retail_price: Money;
   wholesale_price: Money;
@@ -185,6 +193,63 @@ export interface Quote {
   deposit_required: Money;
 }
 
+// ----- Insumos insuficientes y notificaciones (Plan Correcciones v2, C6) -----
+
+/** Requerimiento de un insumo frente a lo disponible. Cantidades como texto (numeric). */
+export interface MaterialNeed {
+  raw_material_id: string;
+  name: string;
+  unit: MaterialUnit;
+  required: string;
+  available: string;
+  shortage: string; // "0" si alcanza
+}
+
+export interface MaterialsPreview {
+  allow_negative_stock: boolean;
+  materials: MaterialNeed[];
+}
+
+export interface ShortageAlert {
+  id: string;
+  order_id: string;
+  folio: string;
+  order_status: OrderStatus;
+  customer: string;
+  material_id: string;
+  material: string;
+  unit: MaterialUnit;
+  shortage: string;
+  current_stock: string;
+  created_at: string;
+  acknowledged: boolean;
+  resolved_at: string | null;
+}
+
+export interface ForecastShortage {
+  material_id: string;
+  material: string;
+  unit: MaterialUnit;
+  required: string;
+  available: string;
+  shortage: string;
+  orders: { order_id: string; folio: string }[];
+}
+
+export interface LowStockAlert {
+  material_id: string;
+  material: string;
+  unit: MaterialUnit;
+  current_stock: string;
+  min_stock: string;
+}
+
+export interface Notifications {
+  shortages: ShortageAlert[];
+  forecast: ForecastShortage[];
+  low_stock: LowStockAlert[];
+}
+
 export interface CreatedOrder {
   id: string;
   folio: string;
@@ -217,12 +282,6 @@ export const METHOD_LABEL: Record<PaymentMethod, string> = {
   CARD: "Tarjeta",
 };
 
-export const CATEGORY_LABEL: Record<ProductCategory, string> = {
-  GRAN_FORMATO: "Gran formato",
-  PAPELERIA: "Papelería comercial",
-  PROMOCIONALES: "Promocionales",
-};
-
 export const TIER_LABEL: Record<PricingTier, string> = {
   RETAIL: "Menudeo",
   WHOLESALE: "Mayoreo",
@@ -247,6 +306,7 @@ export const EVENT_LABEL: Record<OrderEventType, string> = {
   MATERIALS_RETURNED: "Material reintegrado al inventario",
   DELIVERY_OVERRIDE: "Entrega autorizada con saldo pendiente",
   RECIPE_CHANGED: "Receta modificada",
+  STOCK_SHORTAGE: "Producción con insumos insuficientes",
 };
 
 // ----- Módulo 4: costos, inventario y mermas (CONFIDENCIAL: solo ADMIN) -----

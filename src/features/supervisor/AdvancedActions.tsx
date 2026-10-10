@@ -3,6 +3,7 @@
 // "Autorizar entrega con saldo" (BRD §6 Actor 1, SRS Fase 3 §6.3): además de la
 // contraseña de esta pantalla, el SERVIDOR exige un login de menos de 5 minutos.
 
+import { useShortageGuard } from "../orders/useShortageGuard";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { rpc } from "../../lib/rpc";
@@ -106,6 +107,7 @@ function ActionModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { confirmProduction, modal: shortageModal } = useShortageGuard();
   const [verified, setVerified] = useState(false);
   const [reason, setReason] = useState("");
   const [date, setDate] = useState(toDateTimeLocal(order.promised_date, timezone));
@@ -144,7 +146,15 @@ function ActionModal({
     setError(null);
     try {
       if (action === "reschedule" && iso) await rpc.rescheduleOrder(order.id, iso, reason.trim());
-      if (action === "override") await rpc.startProductionOverride(order.id, reason.trim());
+      if (action === "override") {
+        // C6: producción sin anticipo también descuenta insumos.
+        if (!(await confirmProduction(order.id))) {
+          inFlight.current = false;
+          setSaving(false);
+          return;
+        }
+        await rpc.startProductionOverride(order.id, reason.trim());
+      }
       if (action === "force") await rpc.forceDelivery(order.id, reason.trim());
       if (action === "cancel") {
         const list: { raw_material_id: string; qty: string }[] = [];
@@ -175,6 +185,7 @@ function ActionModal({
   }
 
   return (
+    <>
     <Modal title={`${ACTION_TITLE[action]} · ${order.folio}`} onClose={onClose} locked={saving}>
       {!verified ? (
         <>
@@ -262,5 +273,7 @@ function ActionModal({
         </form>
       )}
     </Modal>
+    {shortageModal}
+    </>
   );
 }

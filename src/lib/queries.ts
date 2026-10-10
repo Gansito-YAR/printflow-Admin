@@ -13,6 +13,7 @@ import type {
   OrderStatus,
   OrderSummary,
   Product,
+  ProductCategory,
   Profile,
 } from "./types";
 
@@ -31,7 +32,7 @@ const ORDER_DETAIL_SELECT =
   "actor:profiles(full_name))";
 
 const PRODUCT_SELECT =
-  "id, sku, name, category, pricing_unit, retail_price::text, wholesale_price::text, " +
+  "id, sku, name, category_id, category:product_categories(id, name, sort_order), pricing_unit, retail_price::text, wholesale_price::text, " +
   "wholesale_min_qty::text, is_active, fixed_cost::text";
 
 const CUSTOMER_SELECT = "id, phone_number, full_name, pricing_tier, is_active, notes, created_at";
@@ -69,8 +70,14 @@ export async function fetchOrderDetail(folio: string): Promise<OrderDetail | nul
   return order;
 }
 
+export async function fetchCategories(onlyActive = false): Promise<ProductCategory[]> {
+  let query = supabase.from("product_categories").select("id, name, sort_order, is_active").order("sort_order").order("name");
+  if (onlyActive) query = query.eq("is_active", true);
+  return unwrap<ProductCategory[]>(await query);
+}
+
 export async function fetchProducts(onlyActive = false): Promise<Product[]> {
-  let query = supabase.from("products").select(PRODUCT_SELECT).order("category").order("name");
+  let query = supabase.from("products").select(PRODUCT_SELECT).order("name");
   if (onlyActive) query = query.eq("is_active", true);
   return unwrap<Product[]>(await query);
 }

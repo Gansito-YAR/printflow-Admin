@@ -7,6 +7,8 @@ import type {
   CreatedOrder,
   Material,
   MaterialUnit,
+  MaterialsPreview,
+  Notifications,
   OrderCosting,
   ProductSimulation,
   ProfitReport,
@@ -64,6 +66,22 @@ export const rpc = {
 
   advanceOrderStatus(orderId: string, to: Extract<OrderStatus, "IN_PRODUCTION" | "READY_FOR_DELIVERY">) {
     return call<{ status: OrderStatus }>("advance_order_status", { p_order_id: orderId, p_to: to });
+  },
+
+  /** Insumos requeridos vs. disponibles: de un pedido guardado o de partidas sin guardar. */
+  previewMaterials(source: { orderId: string } | { items: { product_id: string; billable_qty: string }[] }) {
+    return call<MaterialsPreview>("preview_materials", {
+      p_order_id: "orderId" in source ? source.orderId : null,
+      p_items: "items" in source ? source.items : null,
+    });
+  },
+
+  getNotifications() {
+    return call<Notifications>("get_notifications", {});
+  },
+
+  acknowledgeInventoryAlert(alertId: string) {
+    return call<void>("acknowledge_inventory_alert", { p_alert_id: alertId });
   },
 
   startProductionOverride(orderId: string, reason: string) {

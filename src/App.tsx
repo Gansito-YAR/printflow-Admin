@@ -13,6 +13,7 @@ import { CustomersPage } from "./features/customers/CustomersPage";
 import { ProductsPage } from "./features/products/ProductsPage";
 import { UsersPage } from "./features/users/UsersPage";
 import { OrderHistoryPage } from "./features/orders/OrderHistoryPage";
+import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { MaterialsPage } from "./features/materials/MaterialsPage";
 import { ProfitPage } from "./features/reports/ProfitPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="clientes" element={<CustomersPage />} />
             <Route path="productos" element={<ProductsPage />} />
             <Route path="insumos" element={<MaterialsPage />} />
+            <Route path="notificaciones" element={<NotificationsPage />} />
             <Route path="utilidad" element={<ProfitPage />} />
             <Route path="bitacora" element={<ActivityPage />} />
             <Route path="usuarios" element={<UsersPage />} />

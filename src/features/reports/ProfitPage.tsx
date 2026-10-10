@@ -7,7 +7,7 @@ import { endOfMonth, format, startOfMonth, startOfYear, subMonths } from "date-f
 import { rpc } from "../../lib/rpc";
 import { toAppError } from "../../lib/errors";
 import type { ProfitReport, ReportBasis, ReportGroup, WasteRow } from "../../lib/types";
-import { CATEGORY_LABEL, MATERIAL_UNIT_LABEL, type ProductCategory } from "../../lib/types";
+import { MATERIAL_UNIT_LABEL } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
 import { formatPct, formatQty, isNegative } from "../../utils/quantity";
@@ -86,8 +86,8 @@ export function ProfitPage() {
     void load();
   }, [load]);
 
-  const label = (key: string, l: string) =>
-    group === "CATEGORY" ? (CATEGORY_LABEL[key as ProductCategory] ?? l) : l;
+  // El servidor ya devuelve el nombre de la categoría como etiqueta.
+  const label = (_key: string, l: string) => l;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
