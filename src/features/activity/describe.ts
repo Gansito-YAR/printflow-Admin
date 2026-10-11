@@ -142,8 +142,17 @@ export function describe(row: ActivityRow, timezone = "America/Mexico_City"): De
   if (row.action === "INSERT") {
     return { title: `${noun[row.category] ?? "Registro"} creado`, lines };
   }
+  const subject = noun[row.category] ?? "Registro";
+  // Eliminar y archivar se nombran por lo que son, no como una "modificación".
+  if (changes?.deleted || changes?.deleted_at?.new) {
+    return { title: `${subject} eliminado`, lines };
+  }
+  const keys = Object.keys(changes ?? {});
+  if (changes?.archived_at && keys.length === 1) {
+    return { title: `${subject} ${changes.archived_at.new ? "archivado" : "restaurado"}`, lines };
+  }
   for (const [k, v] of Object.entries(changes ?? {})) {
     add(`${FIELD_LABEL[k] ?? k}: ${fieldValue(k, v.old)} → ${fieldValue(k, v.new)}`);
   }
-  return { title: `${noun[row.category] ?? "Registro"} modificado`, lines };
+  return { title: `${subject} modificado`, lines };
 }

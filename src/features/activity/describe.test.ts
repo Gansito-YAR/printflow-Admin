@@ -62,3 +62,19 @@ it("reprogramación: fechas en la zona operativa, no ISO", () => {
   );
   expect(d.lines[0]).toBe("15/10/2026 12:00 → 16/10/2026 12:00");
 });
+
+suite("eliminar y archivar (Plan Mejoras v3)", () => {
+  const cat = (changes: Record<string, unknown>) =>
+    describeRow({
+      id: "A1", created_at: "", actor_id: null, category: "INSUMO", action: "UPDATE", entity: "Vinil",
+      reason: null, amount: null, detail: { changes, table: "raw_materials" },
+    }).title;
+  it("eliminado", () => {
+    expect(cat({ deleted: { old: false, new: true } })).toBe("Insumo eliminado");
+    expect(cat({ deleted_at: { old: null, new: "2026-10-10" }, is_active: { old: true, new: false } })).toBe("Insumo eliminado");
+  });
+  it("archivado y restaurado", () => {
+    expect(cat({ archived_at: { old: null, new: "2026-10-10" } })).toBe("Insumo archivado");
+    expect(cat({ archived_at: { old: "2026-10-10", new: null } })).toBe("Insumo restaurado");
+  });
+});
