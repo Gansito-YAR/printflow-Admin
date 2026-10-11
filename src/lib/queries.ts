@@ -33,7 +33,7 @@ const ORDER_DETAIL_SELECT =
 
 const PRODUCT_SELECT =
   "id, sku, name, category_id, category:product_categories(id, name, sort_order), pricing_unit, retail_price::text, wholesale_price::text, " +
-  "wholesale_min_qty::text, is_active, fixed_cost::text";
+  "wholesale_min_qty::text, is_active, fixed_cost::text, archived_at";
 
 const CUSTOMER_SELECT = "id, phone_number, full_name, pricing_tier, is_active, notes, created_at";
 
@@ -78,7 +78,7 @@ export async function fetchCategories(onlyActive = false): Promise<ProductCatego
 
 export async function fetchProducts(onlyActive = false): Promise<Product[]> {
   let query = supabase.from("products").select(PRODUCT_SELECT).order("name");
-  if (onlyActive) query = query.eq("is_active", true);
+  if (onlyActive) query = query.eq("is_active", true).is("archived_at", null);
   return unwrap<Product[]>(await query);
 }
 
@@ -134,11 +134,12 @@ export async function fetchOrderHistory(f: OrderHistoryFilter): Promise<{ rows: 
 // ----- Módulo 4 --------------------------------------------------------------
 
 const MATERIAL_SELECT =
-  "id, sku, name, unit, unit_cost::text, current_stock::text, min_stock::text, is_active";
+  "id, sku, name, unit, unit_cost::text, current_stock::text, min_stock::text, is_active, archived_at";
 
 export async function fetchMaterials(onlyActive = false): Promise<Material[]> {
-  let query = supabase.from("raw_materials").select(MATERIAL_SELECT).order("name");
-  if (onlyActive) query = query.eq("is_active", true);
+  // Los eliminados nunca se listan (siguen existiendo solo para el historial).
+  let query = supabase.from("raw_materials").select(MATERIAL_SELECT).is("deleted_at", null).order("name");
+  if (onlyActive) query = query.eq("is_active", true).is("archived_at", null);
   return unwrap<Material[]>(await query);
 }
 

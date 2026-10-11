@@ -39,7 +39,7 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
   }, [product.id]);
 
   useEffect(() => {
-    Promise.all([fetchMaterials(true), loadSim()])
+    Promise.all([fetchMaterials(false), loadSim()])
       .then(([mats, s]) => {
         setMaterials(mats);
         setRows(
@@ -123,7 +123,9 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
                   className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-2 text-base font-normal md:min-h-10 md:text-sm"
                 >
                   <option value="">Seleccione…</option>
-                  {materials.map((m) => (
+                  {materials
+                    .filter((m) => (m.is_active && !m.archived_at) || m.id === r.raw_material_id)
+                    .map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} (${m.unit_cost}/{MATERIAL_UNIT_LABEL[m.unit]})
                     </option>

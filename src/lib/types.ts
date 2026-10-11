@@ -92,6 +92,8 @@ export interface Product {
   is_active: boolean;
   /** C_fijo por unidad facturable (Módulo 4). */
   fixed_cost: string;
+  /** Archivado: oculto de listas y de la captura de pedidos. */
+  archived_at?: string | null;
 }
 
 /** Pedido tal como lo muestra el Kanban. */
@@ -346,6 +348,8 @@ export interface Material {
   min_stock: string | null;
   is_active: boolean;
   inventory_value?: Money;
+  /** Archivado: oculto de listas y selectores; sigue en sus recetas. */
+  archived_at?: string | null;
 }
 
 export interface InventoryTx {

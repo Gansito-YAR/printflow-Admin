@@ -1,10 +1,11 @@
 // Lista de precios (ADM-09). Los pedidos ya creados conservan su precio
 // (order_items guarda el precio aplicado), así que editar aquí no altera el pasado.
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
 import { fetchCategories, fetchProducts } from "../../lib/queries";
+import { rpc } from "../../lib/rpc";
 import { toAppError } from "../../lib/errors";
 import type { Product, ProductCategory, PricingUnit } from "../../lib/types";
 import { UNIT_LABEL } from "../../lib/types";
@@ -23,6 +24,8 @@ export function ProductsPage() {
   const [recipeOf, setRecipeOf] = useState<Product | null>(null);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [managing, setManaging] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -48,6 +51,40 @@ export function ProductsPage() {
     void load();
   }, [load]);
 
+  const visible = useMemo(() => rows.filter((p) => Boolean(p.archived_at) === showArchived), [rows, showArchived]);
+  const archivedCount = rows.filter((p) => p.archived_at).length;
+
+  // Archivar oculta el producto de esta lista y de la captura de pedidos; su receta y sus pedidos no cambian.
+  async function toggleArchived(p: Product) {
+    if (busy) return;
+    setBusy(p.id);
+    try {
+      await rpc.setProductArchived(p.id, !p.archived_at);
+      toast.success(p.archived_at ? `«${p.name}» restaurado.` : `«${p.name}» archivado. Ya no aparece al capturar pedidos.`);
+      await load();
+    } catch (err) {
+      toast.error(toAppError(err).userText);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // Eliminar: solo si nunca se vendió (lo valida la base de datos); se borra con su receta.
+  async function remove(p: Product) {
+    if (busy) return;
+    if (!window.confirm(`¿Eliminar «${p.name}» y su receta?\n\nSolo es posible si nunca se ha vendido. Si ya está en pedidos, archívelo.`)) return;
+    setBusy(p.id);
+    try {
+      await rpc.deleteProduct(p.id);
+      toast.success(`«${p.name}» eliminado.`);
+      await load();
+    } catch (err) {
+      toast.error(toAppError(err).userText, { duration: 7000 });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -62,16 +99,32 @@ export function ProductsPage() {
           <Button onClick={() => setEditing("new")}>+ Producto</Button>
         </div>
       </div>
+      <div role="tablist" aria-label="Productos" className="flex gap-2">
+        {([false, true] as const).map((arch) => (
+          <button
+            key={String(arch)}
+            type="button"
+            role="tab"
+            aria-selected={showArchived === arch}
+            onClick={() => setShowArchived(arch)}
+            className={`min-h-10 rounded-full border-2 px-4 text-sm font-semibold ${
+              showArchived === arch ? "border-primary bg-primary text-primary-ink" : "border-line bg-surface-0 text-ink-strong"
+            }`}
+          >
+            {arch ? `Archivados (${archivedCount})` : "Vigentes"}
+          </button>
+        ))}
+      </div>
       {error && <ErrorPanel message={error} onRetry={() => void load()} />}
       {loading ? (
         <Spinner label="Cargando…" />
-      ) : rows.length === 0 ? (
-        <EmptyState>Sin productos.</EmptyState>
+      ) : visible.length === 0 ? (
+        <EmptyState>{showArchived ? "No hay productos archivados." : "Sin productos."}</EmptyState>
       ) : (
         <DataList
           label="Productos"
           testId="products-table"
-          rows={rows}
+          rows={visible}
           rowKey={(p) => p.id}
           columns={[
             { key: "sku", header: "SKU", hideOnMobile: true, render: (p) => <span className="tabular">{p.sku}</span> },
@@ -100,6 +153,22 @@ export function ProductsPage() {
               </Button>
               <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(p)}>
                 Editar
+              </Button>
+              <Button
+                variant="secondary"
+                className="md:border-transparent md:bg-transparent"
+                loading={busy === p.id}
+                onClick={() => void toggleArchived(p)}
+              >
+                {p.archived_at ? "Restaurar" : "Archivar"}
+              </Button>
+              <Button
+                variant="secondary"
+                className="text-blocked-ink md:border-transparent md:bg-transparent"
+                disabled={busy !== null}
+                onClick={() => void remove(p)}
+              >
+                Eliminar
               </Button>
             </>
           )}

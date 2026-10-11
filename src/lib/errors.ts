@@ -40,6 +40,8 @@ const MESSAGES: Record<ErrorCode, string> = {
 /** Códigos cuyo `details` es específico y útil para el usuario. */
 const SHOW_DETAIL = new Set<ErrorCode>([
   "PF_INVALID_INPUT",
+  "PF_FORBIDDEN",
+  "PF_NOT_FOUND",
   "PF_OVERPAYMENT",
   "PF_DEPOSIT_REQUIRED",
   "PF_INVALID_TRANSITION",

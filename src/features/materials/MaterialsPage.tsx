@@ -32,7 +32,8 @@ export function MaterialsPage() {
   const [rows, setRows] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"ACTIVE" | "LOW" | "ALL">("ACTIVE");
+  const [filter, setFilter] = useState<"ACTIVE" | "LOW" | "ARCHIVED" | "ALL">("ACTIVE");
+  const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<Material | "new" | null>(null);
   const [moving, setMoving] = useState<{ material: Material; kind: Movement } | null>(null);
   const [kardexOf, setKardexOf] = useState<Material | null>(null);
@@ -54,11 +55,53 @@ export function MaterialsPage() {
     void load();
   }, [load]);
 
+  // Archivar solo oculta: el insumo sigue descontándose en las recetas que lo usan.
+  async function toggleArchived(m: Material) {
+    if (busy) return;
+    setBusy(m.id);
+    try {
+      await rpc.setMaterialArchived(m.id, !m.archived_at);
+      toast.success(m.archived_at ? `«${m.name}» restaurado.` : `«${m.name}» archivado. Sus recetas no cambian.`);
+      await load();
+    } catch (err) {
+      toast.error(toAppError(err).userText);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // Eliminar: solo si no está en ninguna receta (lo valida la base de datos).
+  async function remove(m: Material) {
+    if (busy) return;
+    if (
+      !window.confirm(
+        `¿Eliminar «${m.name}»?\n\nDejará de aparecer en el sistema. Si tiene compras o consumos, ese historial se conserva. ` +
+          "Si está en alguna receta, el sistema no lo permitirá.",
+      )
+    )
+      return;
+    setBusy(m.id);
+    try {
+      const res = await rpc.deleteMaterial(m.id);
+      toast.success(
+        res.result === "DELETED" ? `«${res.name}» eliminado.` : `«${res.name}» eliminado. Su historial de movimientos se conserva.`,
+      );
+      await load();
+    } catch (err) {
+      toast.error(toAppError(err).userText, { duration: 7000 });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const visible = useMemo(
     () =>
-      rows.filter((m) =>
-        filter === "ALL" ? true : filter === "LOW" ? m.is_active && lowStock(m) : m.is_active,
-      ),
+      rows.filter((m) => {
+        if (filter === "ALL") return true;
+        if (filter === "ARCHIVED") return Boolean(m.archived_at);
+        if (m.archived_at) return false; // archivados solo con su filtro
+        return filter === "LOW" ? m.is_active && lowStock(m) : m.is_active;
+      }),
     [rows, filter],
   );
 
@@ -78,6 +121,7 @@ export function MaterialsPage() {
         <SelectField label="Mostrar" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
           <option value="ACTIVE">Activos</option>
           <option value="LOW">Bajo stock mínimo</option>
+          <option value="ARCHIVED">Archivados</option>
           <option value="ALL">Todos</option>
         </SelectField>
       </div>
@@ -107,6 +151,7 @@ export function MaterialsPage() {
                 <>
                   <span className="font-semibold text-ink-strong">{m.name}</span>
                   {!m.is_active && <span className="ml-2 text-xs font-normal text-ink-muted">(inactivo)</span>}
+                  {m.archived_at && <span className="ml-2 text-xs font-normal text-ink-muted">(archivado)</span>}
                 </>
               ),
             },
@@ -167,6 +212,12 @@ export function MaterialsPage() {
                 <Button variant="ghost" onClick={() => setEditing(m)}>
                   Editar
                 </Button>
+                <Button variant="ghost" loading={busy === m.id} onClick={() => void toggleArchived(m)}>
+                  {m.archived_at ? "Restaurar" : "Archivar"}
+                </Button>
+                <Button variant="ghost" className="text-blocked-ink" disabled={busy !== null} onClick={() => void remove(m)}>
+                  Eliminar
+                </Button>
               </span>
             </>
           )}
@@ -182,6 +233,8 @@ export function MaterialsPage() {
                 ["Conteo físico", () => setMoving({ material: moreOf, kind: "adjust" }), false],
                 ["Ver movimientos", () => setKardexOf(moreOf), false],
                 ["Editar insumo", () => setEditing(moreOf), false],
+                [moreOf.archived_at ? "Restaurar" : "Archivar", () => void toggleArchived(moreOf), false],
+                ["Eliminar insumo", () => void remove(moreOf), false],
               ] as const
             ).map(([label, run, disabled]) => (
               <Button
@@ -289,8 +342,12 @@ function MaterialForm({
           label="Unidad"
           value={unit}
           onChange={(e) => setUnit(e.target.value as MaterialUnit)}
-          disabled={saving}
-          hint={material ? "No se puede cambiar si el insumo ya tiene movimientos." : "Unidad en la que se compra y se consume."}
+          disabled={saving || Boolean(material)}
+          hint={
+            material
+              ? "La unidad no se puede cambiar. Si está mal, elimine el insumo y créelo de nuevo."
+              : "Unidad en la que se compra y se consume. Después no se podrá cambiar."
+          }
         >
           {(Object.keys(MATERIAL_UNIT_LABEL) as MaterialUnit[]).map((u) => (
             <option key={u} value={u}>

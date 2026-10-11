@@ -118,6 +118,25 @@ export const rpc = {
   },
 
   // ----- Módulo 4 (costos, inventario y mermas) -----
+  /** Archivar oculta el insumo de listas y selectores; sus recetas siguen igual. */
+  setMaterialArchived(id: string, archived: boolean) {
+    return call<Material>("set_material_archived", { p_id: id, p_archived: archived });
+  },
+
+  /** Elimina un insumo que no está en recetas. DELETED = borrado; REMOVED_WITH_HISTORY = conserva su historial. */
+  deleteMaterial(id: string) {
+    return call<{ result: "DELETED" | "REMOVED_WITH_HISTORY"; name: string }>("delete_material", { p_id: id });
+  },
+
+  setProductArchived(id: string, archived: boolean) {
+    return call<void>("set_product_archived", { p_id: id, p_archived: archived });
+  },
+
+  /** Solo si el producto nunca se vendió; borra también su receta. */
+  deleteProduct(id: string) {
+    return call<void>("delete_product", { p_id: id });
+  },
+
   upsertMaterial(m: {
     id?: string;
     sku: string;

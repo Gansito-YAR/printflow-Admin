@@ -49,6 +49,9 @@ const FIELD_LABEL: Record<string, string> = {
   category: "Categoría",
   category_id: "Categoría",
   password: "Contraseña",
+  archived_at: "Archivado",
+  deleted_at: "Eliminado",
+  deleted: "Eliminado",
   pricing_unit: "Unidad de cobro",
   retail_price: "Precio menudeo",
   wholesale_price: "Precio mayoreo",
@@ -66,6 +69,8 @@ const FIELD_LABEL: Record<string, string> = {
 const MONEY_FIELDS = new Set(["retail_price", "wholesale_price", "fixed_cost"]);
 
 function fieldValue(key: string, v: unknown): string {
+  // Archivado / eliminado se guardan como fecha: para leerlo basta "Sí" o "No".
+  if (key === "archived_at" || key === "deleted_at") return v ? "Sí" : "No";
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "boolean") return v ? "Sí" : "No";
   if (key === "pricing_tier") return TIER_LABEL[v as keyof typeof TIER_LABEL] ?? String(v);
