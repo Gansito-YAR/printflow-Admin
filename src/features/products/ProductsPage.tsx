@@ -69,10 +69,16 @@ export function ProductsPage() {
     }
   }
 
-  // Eliminar: solo si nunca se vendió (lo valida la base de datos); se borra con su receta.
+  // Eliminar = ocultar para todos. Nunca se borra: cotizaciones, pedidos y reportes lo conservan.
   async function remove(p: Product) {
     if (busy) return;
-    if (!window.confirm(`¿Eliminar «${p.name}» y su receta?\n\nSolo es posible si nunca se ha vendido. Si ya está en pedidos, archívelo.`)) return;
+    if (
+      !window.confirm(
+        `¿Eliminar «${p.name}»?\n\nDejará de aparecer en el sistema y no se podrá usar en pedidos nuevos. ` +
+          "Las cotizaciones y pedidos que ya lo tienen no cambian.",
+      )
+    )
+      return;
     setBusy(p.id);
     try {
       await rpc.deleteProduct(p.id);

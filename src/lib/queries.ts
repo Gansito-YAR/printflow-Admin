@@ -77,7 +77,8 @@ export async function fetchCategories(onlyActive = false): Promise<ProductCatego
 }
 
 export async function fetchProducts(onlyActive = false): Promise<Product[]> {
-  let query = supabase.from("products").select(PRODUCT_SELECT).order("name");
+  // Los eliminados nunca se listan (siguen en la base para pedidos e historial).
+  let query = supabase.from("products").select(PRODUCT_SELECT).is("deleted_at", null).order("name");
   if (onlyActive) query = query.eq("is_active", true).is("archived_at", null);
   return unwrap<Product[]>(await query);
 }

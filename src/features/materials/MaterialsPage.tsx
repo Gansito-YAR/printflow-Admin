@@ -75,17 +75,15 @@ export function MaterialsPage() {
     if (busy) return;
     if (
       !window.confirm(
-        `¿Eliminar «${m.name}»?\n\nDejará de aparecer en el sistema. Si tiene compras o consumos, ese historial se conserva. ` +
-          "Si está en alguna receta, el sistema no lo permitirá.",
+        `¿Eliminar «${m.name}»?\n\nDejará de aparecer en el sistema para todos los usuarios. Su historial de compras ` +
+          "y consumos se conserva, y los pedidos que lo usaron no cambian. Si está en alguna receta, el sistema no lo permitirá.",
       )
     )
       return;
     setBusy(m.id);
     try {
       const res = await rpc.deleteMaterial(m.id);
-      toast.success(
-        res.result === "DELETED" ? `«${res.name}» eliminado.` : `«${res.name}» eliminado. Su historial de movimientos se conserva.`,
-      );
+      toast.success(`«${res.name}» eliminado.`);
       await load();
     } catch (err) {
       toast.error(toAppError(err).userText, { duration: 7000 });

@@ -123,16 +123,16 @@ export const rpc = {
     return call<Material>("set_material_archived", { p_id: id, p_archived: archived });
   },
 
-  /** Elimina un insumo que no está en recetas. DELETED = borrado; REMOVED_WITH_HISTORY = conserva su historial. */
+  /** "Elimina" (oculta) un insumo que no está en recetas vigentes. Nunca se borra de la base. */
   deleteMaterial(id: string) {
-    return call<{ result: "DELETED" | "REMOVED_WITH_HISTORY"; name: string }>("delete_material", { p_id: id });
+    return call<{ result: "REMOVED"; name: string }>("delete_material", { p_id: id });
   },
 
   setProductArchived(id: string, archived: boolean) {
     return call<void>("set_product_archived", { p_id: id, p_archived: archived });
   },
 
-  /** Solo si el producto nunca se vendió; borra también su receta. */
+  /** "Elimina" (oculta) el producto. Nunca se borra: pedidos y cotizaciones lo conservan. */
   deleteProduct(id: string) {
     return call<void>("delete_product", { p_id: id });
   },
