@@ -8,6 +8,8 @@ import type {
   Material,
   MaterialUnit,
   MaterialsPreview,
+  ExpenseFrequency,
+  RecurringExpense,
   Notifications,
   OrderCosting,
   ProductSimulation,
@@ -209,6 +211,86 @@ export const rpc = {
   getProfitReport(from: string, to: string, basis: ReportBasis, group: ReportGroup) {
     return call<ProfitReport>("get_profit_report", { p_from: from, p_to: to, p_basis: basis, p_group: group });
   },
+  // ----- Gastos del negocio -----
+  /** Gasto único (sin frecuencia) o continuo. `date`: fecha del gasto, o inicio del continuo. */
+  createExpense(e: {
+    concept: string;
+    amount: string;
+    categoryId: string;
+    date: string;
+    frequency?: ExpenseFrequency | null;
+    weekday?: number | null;
+    monthDay?: number | null;
+    month?: number | null;
+    endsOn?: string | null;
+    notes?: string | null;
+  }) {
+    return call<{ kind: "ONE_TIME" | "RECURRING"; id: string; generated?: number }>("create_expense", {
+      p_concept: e.concept,
+      p_amount: e.amount,
+      p_category_id: e.categoryId,
+      p_date: e.date,
+      p_frequency: e.frequency ?? null,
+      p_weekday: e.weekday ?? null,
+      p_month_day: e.monthDay ?? null,
+      p_month: e.month ?? null,
+      p_ends_on: e.endsOn ?? null,
+      p_notes: e.notes ?? null,
+    });
+  },
+  /** Cambia un gasto continuo desde el próximo cobro; los cargos ya registrados no cambian. */
+  updateRecurringExpense(id: string, e: {
+    concept: string;
+    amount: string;
+    categoryId: string;
+    frequency: ExpenseFrequency;
+    weekday?: number | null;
+    monthDay?: number | null;
+    month?: number | null;
+    endsOn?: string | null;
+  }) {
+    return call<void>("update_recurring_expense", {
+      p_id: id,
+      p_concept: e.concept,
+      p_amount: e.amount,
+      p_category_id: e.categoryId,
+      p_frequency: e.frequency,
+      p_weekday: e.weekday ?? null,
+      p_month_day: e.monthDay ?? null,
+      p_month: e.month ?? null,
+      p_ends_on: e.endsOn ?? null,
+    });
+  },
+  setRecurringExpensePaused(id: string, paused: boolean) {
+    return call<void>("set_recurring_expense_paused", { p_id: id, p_paused: paused });
+  },
+  deleteRecurringExpense(id: string) {
+    return call<void>("delete_recurring_expense", { p_id: id });
+  },
+  voidExpense(id: string, reason: string) {
+    return call<void>("void_expense", { p_id: id, p_reason: reason });
+  },
+  previewRecurrence(p: { frequency: ExpenseFrequency; startsOn: string; weekday?: number | null; monthDay?: number | null; month?: number | null; endsOn?: string | null }) {
+    return call<string[]>("preview_recurrence", {
+      p_frequency: p.frequency,
+      p_starts_on: p.startsOn,
+      p_weekday: p.weekday ?? null,
+      p_month_day: p.monthDay ?? null,
+      p_month: p.month ?? null,
+      p_ends_on: p.endsOn ?? null,
+      p_count: 3,
+    });
+  },
+  listRecurringExpenses() {
+    return call<RecurringExpense[]>("list_recurring_expenses", {});
+  },
+  generateDueExpenses() {
+    return call<number>("generate_due_expenses", {});
+  },
+  acknowledgeExpense(id: string) {
+    return call<void>("acknowledge_expense", { p_id: id });
+  },
+
   getWasteReport(from: string, to: string) {
     return call<WasteRow[]>("get_waste_report", { p_from: from, p_to: to });
   },

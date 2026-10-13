@@ -14,7 +14,7 @@ import { formatMoney } from "../../utils/money";
 import { formatQty } from "../../utils/quantity";
 import { formatDateTime } from "../../utils/dates";
 
-export type ActivityCategory = "PEDIDO" | "INVENTARIO" | "CLIENTE" | "PRODUCTO" | "INSUMO" | "CONFIGURACION" | "USUARIO";
+export type ActivityCategory = "PEDIDO" | "INVENTARIO" | "CLIENTE" | "PRODUCTO" | "INSUMO" | "CONFIGURACION" | "USUARIO" | "GASTO";
 
 export const CATEGORY_LABEL_ACTIVITY: Record<ActivityCategory, string> = {
   PEDIDO: "Pedidos y cobros",
@@ -24,6 +24,7 @@ export const CATEGORY_LABEL_ACTIVITY: Record<ActivityCategory, string> = {
   INSUMO: "Insumos",
   CONFIGURACION: "Configuración",
   USUARIO: "Usuarios",
+  GASTO: "Gastos del negocio",
 };
 
 export interface ActivityRow {
@@ -71,6 +72,17 @@ const FIELD_LABEL: Record<string, string> = {
   default_lead_days: "Días de entrega sugeridos",
   kanban_delivered_days: "Días de entregados en el tablero",
   inactivity_minutes: "Minutos de inactividad",
+  concept: "Concepto",
+  amount: "Monto",
+  frequency: "Frecuencia",
+  weekday: "Día de la semana",
+  month_day: "Día del mes",
+  month_of_year: "Mes",
+  ends_on: "Termina el",
+  paused: "En pausa",
+  voided_at: "Anulado",
+  void_reason: "Motivo de anulación",
+  acknowledged_at: "Visto",
   role: "Rol",
   insumos: "Insumos en la receta",
 };
@@ -143,6 +155,7 @@ export function describe(row: ActivityRow, timezone = "America/Mexico_City"): De
     INSUMO: "Insumo",
     CONFIGURACION: "Configuración",
     USUARIO: "Usuario",
+    GASTO: "Gasto",
   };
   if (row.action === "RECIPE_CHANGED") {
     add(changes?.insumos ? `Receta guardada con ${String(changes.insumos.new)} insumo(s)` : null);

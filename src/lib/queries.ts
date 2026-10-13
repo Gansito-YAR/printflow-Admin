@@ -12,6 +12,8 @@ import type {
   OrderDetail,
   OrderStatus,
   OrderSummary,
+  BusinessExpense,
+  ExpenseCategory,
   Product,
   ProductCategory,
   Profile,
@@ -80,6 +82,26 @@ export async function fetchOrderDetail(folio: string): Promise<OrderDetail | nul
   order.payments.sort((a, b) => a.created_at.localeCompare(b.created_at));
   order.events.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id - b.id);
   return order;
+}
+
+export async function fetchExpenseCategories(): Promise<ExpenseCategory[]> {
+  const result = await supabase.from("expense_categories").select("id, name, sort_order, is_active").order("sort_order").order("name");
+  return unwrap<ExpenseCategory[]>(result);
+}
+
+/** Cargos del negocio (únicos y automáticos) entre dos fechas, incluidos los anulados. */
+export async function fetchBusinessExpenses(from: string, to: string): Promise<BusinessExpense[]> {
+  const result = await supabase
+    .from("business_expenses")
+    .select(
+      "id, expense_date, concept, amount::text, recurring_expense_id, notes, voided_at, void_reason, " +
+        "category:expense_categories(name), created_by:profiles!business_expenses_created_by_fkey(full_name)",
+    )
+    .gte("expense_date", from)
+    .lte("expense_date", to)
+    .order("expense_date", { ascending: false })
+    .order("created_at", { ascending: false });
+  return unwrap<BusinessExpense[]>(result);
 }
 
 export async function fetchCategories(onlyActive = false): Promise<ProductCategory[]> {

@@ -11,7 +11,7 @@ import { supabase } from "../lib/supabaseClient";
 import { rpc } from "../lib/rpc";
 import type { Notifications } from "../lib/types";
 
-const EMPTY: Notifications = { shortages: [], forecast: [], low_stock: [] };
+const EMPTY: Notifications = { shortages: [], forecast: [], low_stock: [], expenses: [] };
 const POLL_MS = 5 * 60 * 1000;
 
 interface NotificationsState {
@@ -57,10 +57,10 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
   },
 }));
 
-/** Alertas que cuentan en la campana: faltantes abiertos no vistos + previstos + stock bajo. */
+/** Alertas que cuentan en la campana: faltantes abiertos no vistos + previstos + stock bajo + gastos cobrados. */
 export function unseenCount(d: Notifications): number {
   const openUnseen = d.shortages.filter((s) => !s.resolved_at && !s.acknowledged).length;
-  return openUnseen + d.forecast.length + d.low_stock.length;
+  return openUnseen + d.forecast.length + d.low_stock.length + (d.expenses?.length ?? 0);
 }
 
 /** ¿Hay algún faltante en producción sin resolver? (define el tono de la campana). */

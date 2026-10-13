@@ -14,6 +14,8 @@ import { formatPct, formatQty, isNegative } from "../../utils/quantity";
 import { Button, EmptyState, ErrorPanel, SelectField, Spinner, TextField } from "../../components/ui";
 import { DataList } from "../../components/DataList";
 import { FilterBar } from "../../components/FilterBar";
+import { InfoTip } from "../../components/InfoTip";
+import { ExpensesTab } from "./ExpensesTab";
 
 const GROUP_LABEL: Record<ReportGroup, string> = {
   ORDER: "Pedido",
@@ -54,7 +56,7 @@ function downloadCsv(name: string, header: string[], rows: (string | number | bo
 
 export function ProfitPage() {
   const timezone = useSettingsStore((s) => s.timezone);
-  const [tab, setTab] = useState<"PROFIT" | "WASTE">("PROFIT");
+  const [tab, setTab] = useState<"PROFIT" | "EXPENSES" | "WASTE">("PROFIT");
   const [preset, setPreset] = useState<Preset>("THIS_MONTH");
   const [[from, to], setRange] = useState<[string, string]>(() => presetRange("THIS_MONTH", timezone));
   const [basis, setBasis] = useState<ReportBasis>("DELIVERED");
@@ -74,7 +76,7 @@ export function ProfitPage() {
         if (group !== "MONTH") r.rows.sort((a, b) => a.label.localeCompare(b.label, "es"));
         setReport(r);
       }
-      else setWaste(await rpc.getWasteReport(from, to));
+      else if (tab === "WASTE") setWaste(await rpc.getWasteReport(from, to));
     } catch (err) {
       setError(toAppError(err).userText);
     } finally {
@@ -95,12 +97,15 @@ export function ProfitPage() {
         <div>
           <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Utilidad y mermas</h1>
           <p className="text-sm text-ink-muted">
-            Utilidad neta = venta − (costo de producción + gastos extra). Confidencial.
+            Cuánto dejan los pedidos, cuánto se gasta en el negocio y cuánto material se desperdicia. Confidencial.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex" role="tablist">
+        <div className="grid grid-cols-3 gap-2 sm:flex" role="tablist">
           <Button title="Cuánto se ganó: venta menos costos" variant={tab === "PROFIT" ? "primary" : "secondary"} onClick={() => setTab("PROFIT")} role="tab" aria-selected={tab === "PROFIT"}>
             Utilidad
+          </Button>
+          <Button title="Renta, sueldos, servicios y otros gastos del negocio" variant={tab === "EXPENSES" ? "primary" : "secondary"} onClick={() => setTab("EXPENSES")} role="tab" aria-selected={tab === "EXPENSES"} data-testid="tab-expenses">
+            Gastos
           </Button>
           <Button title="Desperdicio esperado contra el real por insumo" variant={tab === "WASTE" ? "primary" : "secondary"} onClick={() => setTab("WASTE")} role="tab" aria-selected={tab === "WASTE"}>
             Mermas
@@ -155,8 +160,51 @@ export function ProfitPage() {
       {error && <ErrorPanel message={error} onRetry={() => void load()} />}
       {loading && <Spinner label="Calculando…" />}
 
+      {tab === "EXPENSES" && <ExpensesTab from={from} to={to} />}
+
       {!loading && tab === "PROFIT" && report && (
         <>
+          {/* Resultado del negocio: pedidos − gastos del negocio */}
+          <div className="grid grid-cols-1 gap-3 tabular md:grid-cols-3" data-testid="business-totals">
+            <div className="rounded-md border border-line bg-surface-0 p-4">
+              <p className="flex items-center gap-1 text-xs text-ink-muted">
+                Utilidad de los pedidos <InfoTip text="Venta menos materiales, costo fijo y gastos extra de cada pedido." />
+              </p>
+              <p className="text-xl font-bold text-ink-strong">{formatMoney(report.totals.profit)}</p>
+            </div>
+            <div className="rounded-md border border-line bg-surface-0 p-4">
+              <p className="flex items-center gap-1 text-xs text-ink-muted">
+                − Gastos del negocio <InfoTip text="Renta, sueldos, servicios y otros gastos registrados en la pestaña Gastos, en estas fechas." />
+              </p>
+              <p className="text-xl font-bold text-ink-strong">{formatMoney(report.business_expenses)}</p>
+              {report.expenses_by_category.length > 0 && (
+                <p className="mt-1 text-xs text-ink-muted">
+                  {report.expenses_by_category.map((c) => `${c.category} ${formatMoney(c.amount)}`).join(" · ")}
+                </p>
+              )}
+            </div>
+            <div className={`rounded-md border-2 p-4 ${isNegative(report.business_profit) ? "border-blocked-line bg-blocked" : "border-cleared-line bg-cleared"}`}>
+              <p className="flex items-center gap-1 text-xs font-semibold text-ink-base">
+                = Utilidad del negocio <InfoTip text="Lo que realmente gana el negocio en el periodo: utilidad de los pedidos menos los gastos del negocio." />
+              </p>
+              <p className={`text-2xl font-bold ${isNegative(report.business_profit) ? "text-blocked-ink" : "text-cleared-ink"}`} data-testid="business-profit">
+                {formatMoney(report.business_profit)}
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-ink-base" data-testid="profit-summary">
+            En este periodo los pedidos dejaron <strong>{formatMoney(report.totals.profit)}</strong>
+            {Number(report.business_expenses) > 0 ? (
+              <>
+                ; después de <strong>{formatMoney(report.business_expenses)}</strong> de gastos del negocio,{" "}
+                {isNegative(report.business_profit) ? "el negocio perdió " : "el negocio ganó "}
+                <strong>{formatMoney(report.business_profit.replace("-", ""))}</strong>.
+              </>
+            ) : (
+              <>. No hay gastos del negocio registrados en estas fechas (pestaña «Gastos»).</>
+            )}
+          </p>
+          <h2 className="mt-2 text-base font-bold text-ink-strong">Detalle de los pedidos</h2>
           <div className="grid grid-cols-2 gap-3 tabular md:grid-cols-3 lg:grid-cols-5" data-testid="profit-totals">
             {(
               [

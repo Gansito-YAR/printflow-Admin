@@ -266,6 +266,8 @@ export interface Notifications {
   shortages: ShortageAlert[];
   forecast: ForecastShortage[];
   low_stock: LowStockAlert[];
+  /** Cobros automáticos de gastos continuos aún no vistos. */
+  expenses: ExpenseNotice[];
 }
 
 export interface CreatedOrder {
@@ -453,6 +455,71 @@ export interface ProfitRow {
 export interface ProfitReport {
   rows: ProfitRow[];
   totals: Omit<ProfitRow, "key" | "label" | "incomplete_cost">;
+  /** Gastos del negocio del periodo (renta, sueldos…), fuera de los pedidos. */
+  business_expenses: Money;
+  /** Utilidad de los pedidos − gastos del negocio. */
+  business_profit: Money;
+  expenses_by_category: { category: string; amount: Money }[];
+  expenses_by_month: Record<string, Money>;
+}
+
+// ----- Gastos del negocio (Plan_Gastos_Negocio.md) -----
+
+export type ExpenseFrequency = "DAILY" | "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "BIMONTHLY" | "YEARLY";
+
+export const FREQUENCY_LABEL: Record<ExpenseFrequency, string> = {
+  DAILY: "Diario",
+  WEEKLY: "Semanal",
+  BIWEEKLY: "Quincenal (días 15 y último)",
+  MONTHLY: "Mensual",
+  BIMONTHLY: "Bimestral (cada 2 meses)",
+  YEARLY: "Anual",
+};
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface RecurringExpense {
+  id: string;
+  concept: string;
+  amount: Money;
+  category_id: string;
+  category: string;
+  frequency: ExpenseFrequency;
+  weekday: number | null;
+  month_day: number | null;
+  month_of_year: number | null;
+  starts_on: string;
+  ends_on: string | null;
+  paused: boolean;
+  next_charge: string | null;
+  charges: number;
+}
+
+export interface BusinessExpense {
+  id: string;
+  expense_date: string;
+  concept: string;
+  amount: Money;
+  category: { name: string } | null;
+  recurring_expense_id: string | null;
+  notes: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
+  created_by: { full_name: string } | null;
+}
+
+export interface ExpenseNotice {
+  id: string;
+  concept: string;
+  amount: Money;
+  expense_date: string;
+  category: string;
+  recurring_expense_id: string;
 }
 
 export interface WasteRow {

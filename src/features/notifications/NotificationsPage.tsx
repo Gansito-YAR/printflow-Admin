@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Eye, PackageMinus, TrendingDown, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eye, PackageMinus, Receipt, TrendingDown, type LucideIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNotificationsStore } from "../../store/notifications";
 import { useSettingsStore } from "../../store/settings";
@@ -17,6 +17,9 @@ import { formatQty } from "../../utils/quantity";
 import { formatDateTime } from "../../utils/dates";
 import { toAppError } from "../../lib/errors";
 import { Button, EmptyState, ErrorPanel, Spinner } from "../../components/ui";
+import { rpc } from "../../lib/rpc";
+import { formatMoney } from "../../utils/money";
+import { longDate } from "../reports/ExpensesTab";
 
 type Tab = "active" | "resolved";
 
@@ -81,7 +84,7 @@ export function NotificationsPage() {
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
       <div>
         <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Notificaciones</h1>
-        <p className="text-sm text-ink-muted">Insumos insuficientes y stock bajo. Se actualiza solo.</p>
+        <p className="text-sm text-ink-muted">Insumos insuficientes, stock bajo y gastos cobrados automáticamente. Se actualiza solo.</p>
       </div>
 
       <div role="tablist" aria-label="Notificaciones" className="flex gap-2">
@@ -125,7 +128,7 @@ export function NotificationsPage() {
             ))}
           </ul>
         )
-      ) : open.length + data.forecast.length + data.low_stock.length === 0 ? (
+      ) : open.length + data.forecast.length + data.low_stock.length + (data.expenses?.length ?? 0) === 0 ? (
         <EmptyState>
           <span className="inline-flex items-center gap-2">
             <CheckCircle2 size={18} aria-hidden /> Todo en orden: no hay faltantes ni insumos bajo el mínimo.
@@ -236,6 +239,53 @@ export function NotificationsPage() {
                     <span className="font-semibold text-ink-strong">{m.material}</span>
                     <span className="tabular text-ink-base">
                       {formatQty(m.current_stock)} / mín. {formatQty(m.min_stock)} {unit(m.unit)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {(data.expenses?.length ?? 0) > 0 && (
+            <Section
+              icon={Receipt}
+              title="Gastos cobrados"
+              description="Cobros automáticos de sus gastos continuos. Ya se reflejan en Utilidad."
+              tone="neutral"
+              count={data.expenses.length}
+            >
+              <ul className="flex flex-col gap-2" data-testid="expense-notices">
+                {data.expenses.map((e) => (
+                  <li key={e.id} className="flex flex-col gap-2 rounded-md border border-line bg-surface-0 p-3 text-sm sm:flex-row sm:items-center">
+                    <span className="min-w-0 flex-1">
+                      Se registró el gasto <strong>«{e.concept}»</strong> por <strong className="tabular">{formatMoney(e.amount)}</strong>
+                      <span className="block text-xs text-ink-muted">
+                        {longDate(e.expense_date)} · {e.category}
+                      </span>
+                    </span>
+                    <span className="flex gap-2">
+                      <Link to="/utilidad" className="inline-flex min-h-10 items-center rounded-md border border-line px-3 text-sm font-semibold text-ink-strong hover:bg-surface-2">
+                        Ver en Utilidad
+                      </Link>
+                      <Button
+                        variant="secondary"
+                        loading={busy === e.id}
+                        onClick={async () => {
+                          setBusy(e.id);
+                          try {
+                            await rpc.acknowledgeExpense(e.id);
+                            await refresh();
+                          } catch (err) {
+                            toast.error(toAppError(err).userText);
+                          } finally {
+                            setBusy(null);
+                          }
+                        }}
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <Eye size={16} aria-hidden /> Visto
+                        </span>
+                      </Button>
                     </span>
                   </li>
                 ))}
