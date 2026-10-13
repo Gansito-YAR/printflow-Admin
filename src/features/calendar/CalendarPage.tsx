@@ -176,11 +176,11 @@ export function CalendarPage() {
 
       {/* Barra: mes, navegación, vista y filtro */}
       <div className="flex flex-col gap-3 rounded-md border border-line bg-surface-0 p-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" onClick={() => goMonth(-1)} aria-label="Mes anterior" title="Mes anterior">
             <ChevronLeft size={18} aria-hidden />
           </Button>
-          <h2 className="min-w-44 text-center text-lg font-bold capitalize text-ink-strong" aria-live="polite">
+          <h2 className="min-w-32 flex-1 text-center text-lg font-bold capitalize text-ink-strong sm:min-w-44 sm:flex-none" aria-live="polite">
             {format(month, "MMMM yyyy", { locale: es })}
           </h2>
           <Button variant="secondary" onClick={() => goMonth(1)} aria-label="Mes siguiente" title="Mes siguiente">

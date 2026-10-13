@@ -63,6 +63,13 @@ export function NewOrderPage() {
   const [promised, setPromised] = useState(() =>
     toDateTimeLocal(new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000).toISOString(), timezone),
   );
+  // La configuración puede llegar después del primer render (recarga de página):
+  // mientras la persona no haya tocado la fecha, se ajusta a los días configurados.
+  const promisedTouched = useRef(false);
+  useEffect(() => {
+    if (promisedTouched.current) return;
+    setPromised(toDateTimeLocal(new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000).toISOString(), timezone));
+  }, [leadDays, timezone]);
   const [notes, setNotes] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
@@ -278,7 +285,10 @@ export function NewOrderPage() {
             type="datetime-local"
             min={minDate}
             value={promised}
-            onChange={(e) => setPromised(e.target.value)}
+            onChange={(e) => {
+              promisedTouched.current = true;
+              setPromised(e.target.value);
+            }}
             error={dateError}
             hint={`Hora de ${timezone}. Una vez guardada solo se cambia con motivo, en Acciones avanzadas.`}
             disabled={submitting}

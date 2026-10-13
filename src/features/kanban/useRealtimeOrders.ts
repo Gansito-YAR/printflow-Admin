@@ -27,6 +27,10 @@ export function useRealtimeOrders() {
   const [rtStatus, setRtStatus] = useState<RealtimeStatus>("connecting");
   const channelRef = useRef<RealtimeChannel | null>(null);
   const everConnected = useRef(false);
+  // Si la configuración llega después de la primera carga (recarga de página), se recarga
+  // con los días de entregados configurados.
+  const deliveredDays = useSettingsStore((s) => s.kanban_delivered_days);
+  const firstDays = useRef(deliveredDays);
 
   const loadAll = useCallback(async () => {
     try {
@@ -75,6 +79,12 @@ export function useRealtimeOrders() {
       });
     channelRef.current = channel;
   }, [loadAll, refreshOne]);
+
+  useEffect(() => {
+    if (deliveredDays === firstDays.current) return;
+    firstDays.current = deliveredDays;
+    void loadAll();
+  }, [deliveredDays, loadAll]);
 
   useEffect(() => {
     void loadAll();

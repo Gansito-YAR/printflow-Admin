@@ -478,9 +478,9 @@ export function ExpensesTab({ from, to }: { from: string; to: string }) {
                 <tr>
                   <th className="px-3 py-2">Fecha</th>
                   <th className="px-3 py-2">Concepto</th>
-                  <th className="px-3 py-2">Categoría</th>
+                  <th className="hidden px-3 py-2 sm:table-cell">Categoría</th>
                   <th className="px-3 py-2 text-right">Monto</th>
-                  <th className="px-3 py-2">Origen</th>
+                  <th className="hidden px-3 py-2 md:table-cell">Origen</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -490,11 +490,12 @@ export function ExpensesTab({ from, to }: { from: string; to: string }) {
                     <td className="whitespace-nowrap px-3 py-2 tabular">{h.expense_date.split("-").reverse().join("/")}</td>
                     <td className="px-3 py-2">
                       {h.concept}
+                      <span className="block text-xs text-ink-muted no-underline sm:hidden">{h.category?.name}</span>
                       {h.voided_at && <span className="block text-xs no-underline">Anulado: {h.void_reason}</span>}
                     </td>
-                    <td className="px-3 py-2">{h.category?.name ?? "—"}</td>
+                    <td className="hidden px-3 py-2 sm:table-cell">{h.category?.name ?? "—"}</td>
                     <td className="px-3 py-2 text-right font-semibold tabular">{formatMoney(h.amount)}</td>
-                    <td className="px-3 py-2 text-xs">{h.recurring_expense_id ? "Automático" : (h.created_by?.full_name ?? "Manual")}</td>
+                    <td className="hidden px-3 py-2 text-xs md:table-cell">{h.recurring_expense_id ? "Automático" : (h.created_by?.full_name ?? "Manual")}</td>
                     <td className="px-3 py-2 text-right">
                       {!h.voided_at && (
                         <Button variant="ghost" title="Anular este gasto (se capturó mal o por error)" onClick={() => setVoiding(h)}>
