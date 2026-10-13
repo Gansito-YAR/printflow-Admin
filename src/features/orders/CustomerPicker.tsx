@@ -65,7 +65,7 @@ export function CustomerPicker({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
         <div className="flex-1">
           <TextField enterKeyHint="search" autoComplete="off"
-            label="Buscar cliente"
+            label="Buscar cliente" help="Escriba al menos 2 letras del nombre o del teléfono."
             placeholder="Nombre o teléfono (mínimo 2 caracteres)"
             value={term}
             onChange={(e) => setTerm(e.target.value)}

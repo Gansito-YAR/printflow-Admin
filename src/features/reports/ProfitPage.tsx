@@ -99,10 +99,10 @@ export function ProfitPage() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex" role="tablist">
-          <Button variant={tab === "PROFIT" ? "primary" : "secondary"} onClick={() => setTab("PROFIT")} role="tab" aria-selected={tab === "PROFIT"}>
+          <Button title="Cuánto se ganó: venta menos costos" variant={tab === "PROFIT" ? "primary" : "secondary"} onClick={() => setTab("PROFIT")} role="tab" aria-selected={tab === "PROFIT"}>
             Utilidad
           </Button>
-          <Button variant={tab === "WASTE" ? "primary" : "secondary"} onClick={() => setTab("WASTE")} role="tab" aria-selected={tab === "WASTE"}>
+          <Button title="Desperdicio esperado contra el real por insumo" variant={tab === "WASTE" ? "primary" : "secondary"} onClick={() => setTab("WASTE")} role="tab" aria-selected={tab === "WASTE"}>
             Mermas
           </Button>
         </div>
@@ -111,7 +111,7 @@ export function ProfitPage() {
       <FilterBar active={preset === "CUSTOM" ? 1 : 0}>
         <div>
           <SelectField
-            label="Periodo"
+            label="Periodo" help="Atajo para elegir el rango de fechas."
             value={preset}
             onChange={(e) => {
               const p = e.target.value as Preset;
@@ -126,21 +126,21 @@ export function ProfitPage() {
           </SelectField>
         </div>
         <div>
-          <TextField label="Desde" type="date" value={from} onChange={(e) => (setPreset("CUSTOM"), setRange([e.target.value, to]))} />
+          <TextField label="Desde" help="Primer día del reporte." type="date" value={from} onChange={(e) => (setPreset("CUSTOM"), setRange([e.target.value, to]))} />
         </div>
         <div>
-          <TextField label="Hasta" type="date" value={to} onChange={(e) => (setPreset("CUSTOM"), setRange([from, e.target.value]))} />
+          <TextField label="Hasta" help="Último día del reporte." type="date" value={to} onChange={(e) => (setPreset("CUSTOM"), setRange([from, e.target.value]))} />
         </div>
         {tab === "PROFIT" && (
           <>
             <div>
-              <SelectField label="Fecha de" value={basis} onChange={(e) => setBasis(e.target.value as ReportBasis)}>
+              <SelectField label="Fecha de" help="Entrega: cuenta lo ya entregado. Registro: lo capturado en el periodo." value={basis} onChange={(e) => setBasis(e.target.value as ReportBasis)}>
                 <option value="DELIVERED">Entrega (vendido)</option>
                 <option value="CREATED">Registro del pedido</option>
               </SelectField>
             </div>
             <div>
-              <SelectField label="Agrupar por" value={group} onChange={(e) => setGroup(e.target.value as ReportGroup)}>
+              <SelectField label="Agrupar por" help="Cómo sumar: por pedido, cliente, mes, producto o categoría." value={group} onChange={(e) => setGroup(e.target.value as ReportGroup)}>
                 {(Object.keys(GROUP_LABEL) as ReportGroup[]).map((g) => (
                   <option key={g} value={g}>
                     {GROUP_LABEL[g]}
@@ -185,7 +185,7 @@ export function ProfitPage() {
           ) : (
             <>
               <div className="flex md:justify-end">
-                <Button
+                <Button title="Descargar la tabla para abrirla en Excel"
                   variant="secondary"
                   className="w-full md:w-auto"
                   onClick={() =>
@@ -252,7 +252,7 @@ export function ProfitPage() {
               registrado. Si la real es alta, conviene revisar el % de merma de las recetas.
             </p>
             <div className="flex md:justify-end">
-              <Button
+              <Button title="Descargar la tabla para abrirla en Excel"
                 variant="secondary"
                 className="w-full md:w-auto"
                 onClick={() =>

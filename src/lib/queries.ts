@@ -43,8 +43,20 @@ function unwrap<T>(result: { data: unknown; error: unknown }): T {
 }
 
 /** Pedidos del Kanban: activos + entregados de los últimos 7 días. Sin cancelados. */
-export async function fetchKanbanOrders(): Promise<OrderSummary[]> {
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+/** Pedidos con fecha pactada en [from, to) — Calendario de entregas. Sin cancelados. */
+export async function fetchOrdersByPromisedDate(fromIso: string, toIso: string): Promise<OrderSummary[]> {
+  const result = await supabase
+    .from("orders")
+    .select(ORDER_SUMMARY_SELECT)
+    .neq("status", "CANCELLED")
+    .gte("promised_date", fromIso)
+    .lt("promised_date", toIso)
+    .order("promised_date");
+  return unwrap<OrderSummary[]>(result);
+}
+
+export async function fetchKanbanOrders(deliveredDays = 7): Promise<OrderSummary[]> {
+  const since = new Date(Date.now() - deliveredDays * 24 * 60 * 60 * 1000).toISOString();
   const result = await supabase
     .from("orders")
     .select(ORDER_SUMMARY_SELECT)

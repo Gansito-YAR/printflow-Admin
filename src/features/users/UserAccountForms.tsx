@@ -186,7 +186,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
       ) : (
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4" data-testid="new-user-form">
           <TextField
-            label="Nombre completo"
+            label="Nombre completo" help="Como aparecerá en la bitácora y en la app."
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             error={errors.name}
@@ -196,7 +196,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
             required
           />
           <TextField
-            label="Correo"
+            label="Correo" help="Con este correo inicia sesión."
             type="email"
             inputMode="email"
             autoCapitalize="none"
@@ -209,7 +209,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
             required
           />
           <SelectField
-            label="Rol"
+            label="Rol" help="Instalador: solo la app de entregas. Administrador: todo el panel."
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
             hint={role === "INSTALLER" ? "Solo la app de entregas: escanear y ver su ruta. No ve dinero." : "Acceso completo al panel."}

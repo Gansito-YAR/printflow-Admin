@@ -1,19 +1,66 @@
-// Configuración del negocio (D-07, D-08, M4-D-07). Solo ADMIN (RLS).
+// Configuración del negocio (D-07, D-08, M4-D-07 + configuración ampliada del
+// 13/10/2026). Solo ADMIN (RLS). Organizada por secciones con ayuda breve.
 
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import toast from "react-hot-toast";
+import { Building2, ClipboardList, LayoutDashboard, Package, Palette, ShieldCheck, type LucideIcon } from "lucide-react";
 import { toAppError } from "../../lib/errors";
 import { useSettingsStore } from "../../store/settings";
+import { useThemeStore, type ThemePreference } from "../../store/theme";
 import { parseQuantity } from "../../utils/quantity";
-import { Button, SelectField, TextField } from "../../components/ui";
+import { Button, SelectField, Spinner, TextAreaField, TextField } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
 
 const TIMEZONES = ["America/Mexico_City", "America/Monterrey", "America/Mazatlan", "America/Hermosillo", "America/Tijuana", "America/Cancun"];
+const TZ_LABEL: Record<string, string> = {
+  "America/Mexico_City": "Centro (CDMX, Guadalajara)",
+  "America/Monterrey": "Monterrey",
+  "America/Mazatlan": "Pacífico (Mazatlán, Culiacán)",
+  "America/Hermosillo": "Sonora (sin horario de verano)",
+  "America/Tijuana": "Noroeste (Tijuana)",
+  "America/Cancun": "Sureste (Cancún)",
+};
+
+function Section({ icon: Icon, title, help, children }: { icon: LucideIcon; title: string; help: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-4 rounded-md border border-line bg-surface-0 p-4 md:p-6" aria-label={title}>
+      <div className="flex items-start gap-2">
+        <Icon size={20} aria-hidden className="mt-0.5 shrink-0 text-brand-accent" />
+        <div>
+          <h2 className="text-base font-bold text-ink-strong">{title}</h2>
+          <p className="text-xs text-ink-muted">{help}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+const blank = (v: string) => (v.trim() ? v.trim() : null);
 
 export function SettingsPage() {
+  const loaded = useSettingsStore((s) => s.loaded);
+  if (!loaded) return <Spinner label="Cargando configuración…" />;
+  return <SettingsForm />;
+}
+
+function SettingsForm() {
   const settings = useSettingsStore();
+  const themePref = useThemeStore((s) => s.preference);
+  const setTheme = useThemeStore((s) => s.setPreference);
+
   const [deposit, setDeposit] = useState(settings.deposit_pct);
   const [timezone, setTimezone] = useState(settings.timezone);
   const [negative, setNegative] = useState(settings.allow_negative_stock);
+  const [name, setName] = useState(settings.business_name);
+  const [phone, setPhone] = useState(settings.business_phone ?? "");
+  const [email, setEmail] = useState(settings.business_email ?? "");
+  const [address, setAddress] = useState(settings.business_address ?? "");
+  const [rfc, setRfc] = useState(settings.business_rfc ?? "");
+  const [footer, setFooter] = useState(settings.remission_footer ?? "");
+  const [leadDays, setLeadDays] = useState(String(settings.default_lead_days));
+  const [deliveredDays, setDeliveredDays] = useState(String(settings.kanban_delivered_days));
+  const [inactivity, setInactivity] = useState(String(settings.inactivity_minutes));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const inFlight = useRef(false);
@@ -24,11 +71,32 @@ export function SettingsPage() {
     const d = parseQuantity(deposit, { decimals: 2, allowZero: true, label: "El anticipo" });
     if (!d.ok) return setError(d.error);
     if (Number(d.value) > 100) return setError("El anticipo no puede ser mayor a 100 %.");
+    if (!name.trim()) return setError("Escriba el nombre del negocio.");
+    const lead = Number(leadDays);
+    if (!Number.isInteger(lead) || lead < 0 || lead > 90) return setError("Días de entrega sugeridos: de 0 a 90.");
+    const shown = Number(deliveredDays);
+    if (!Number.isInteger(shown) || shown < 1 || shown > 90) return setError("Días de entregados en el tablero: de 1 a 90.");
+    if (rfc.trim() && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/i.test(rfc.trim())) return setError("El RFC no tiene un formato válido (12 o 13 caracteres).");
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError("El correo del negocio no es válido.");
+
     inFlight.current = true;
     setSaving(true);
     setError(null);
     try {
-      await settings.save({ deposit_pct: d.value, timezone, allow_negative_stock: negative });
+      await settings.save({
+        deposit_pct: d.value,
+        timezone,
+        allow_negative_stock: negative,
+        business_name: name.trim(),
+        business_phone: blank(phone),
+        business_email: blank(email),
+        business_address: blank(address),
+        business_rfc: blank(rfc)?.toUpperCase() ?? null,
+        remission_footer: blank(footer),
+        default_lead_days: lead,
+        kanban_delivered_days: shown,
+        inactivity_minutes: Number(inactivity),
+      });
       toast.success("Configuración guardada.");
     } catch (err) {
       setError(toAppError(err).userText);
@@ -39,44 +107,103 @@ export function SettingsPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-2xl flex-col gap-4 md:gap-6" data-testid="settings-form">
+    <form onSubmit={onSubmit} noValidate className="mx-auto flex max-w-3xl flex-col gap-4 md:gap-6" data-testid="settings-form">
       <div>
         <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Configuración</h1>
-        <p className="text-sm text-ink-muted">Reglas del negocio que aplica la base de datos a todos los pedidos.</p>
+        <p className="text-sm text-ink-muted">Ajustes del negocio. Se aplican a todo el sistema al guardar.</p>
       </div>
-      <section className="flex flex-col gap-4 rounded-md border border-line bg-surface-0 p-4 md:p-6">
-        <TextField
-          label="Anticipo mínimo para iniciar producción (%)"
-          inputMode="decimal"
-          value={deposit}
-          onChange={(e) => setDeposit(e.target.value)}
-          hint="BRD: 50 % por defecto. Aplica a los pedidos que pasen a producción desde ahora."
-          disabled={saving}
-        />
-        <SelectField
-          label="Zona horaria operativa"
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          hint="Define 'hoy', 'mañana' y 'vencido' en el tablero y en la ruta del instalador."
-          disabled={saving}
-        >
-          {(TIMEZONES.includes(settings.timezone) ? TIMEZONES : [settings.timezone, ...TIMEZONES]).map((tz) => (
-            <option key={tz} value={tz}>
-              {tz}
-            </option>
-          ))}
-        </SelectField>
+
+      <Section icon={Building2} title="Datos del negocio" help="Aparecen en el encabezado y pie de la nota de remisión.">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField label="Nombre comercial" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required disabled={saving}
+            help="Nombre que se imprime arriba en la remisión." />
+          <TextField label="Teléfono / WhatsApp" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={30} disabled={saving}
+            help="Número de contacto para sus clientes." />
+          <TextField label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} disabled={saving}
+            help="Opcional. Correo de contacto en la remisión." />
+          <TextField label="RFC" value={rfc} onChange={(e) => setRfc(e.target.value.toUpperCase())} maxLength={13} disabled={saving}
+            help="Opcional. Solo si quiere que aparezca en la remisión." />
+        </div>
+        <TextField label="Dirección" value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} disabled={saving}
+          help="Calle, número, colonia y ciudad del taller." />
+        <TextAreaField label="Leyenda al pie de la remisión" value={footer} onChange={(e) => setFooter(e.target.value)} maxLength={400} disabled={saving}
+          hint={`${footer.length}/400`}
+          help="Condiciones que verá el cliente. Ej.: «Trabajos no recogidos en 30 días no se garantizan»." />
+      </Section>
+
+      <Section icon={ClipboardList} title="Pedidos y cobros" help="Reglas que la base de datos aplica a todos los pedidos.">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField label="Anticipo mínimo para producir (%)" inputMode="decimal" value={deposit} onChange={(e) => setDeposit(e.target.value)} disabled={saving}
+            help="Porcentaje del total que debe pagar el cliente antes de pasar el pedido a producción. 50 % por defecto." />
+          <TextField label="Días de entrega sugeridos" inputMode="numeric" value={leadDays} onChange={(e) => setLeadDays(e.target.value.replace(/\D/g, ""))} disabled={saving}
+            help="Al capturar un pedido, la fecha de entrega se propone sola a esta cantidad de días. Siempre se puede cambiar." />
+        </div>
+      </Section>
+
+      <Section icon={Package} title="Inventario" help="Cómo se comporta el inventario al producir.">
         <label className="flex items-start gap-2 text-sm text-ink-strong">
           <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={negative} onChange={(e) => setNegative(e.target.checked)} disabled={saving} />
           <span>
-            Permitir producir aunque el inventario quede en negativo
-            <span className="block text-xs text-ink-muted">
-              Recomendado mientras el inventario físico no esté capturado. Si se desactiva, un pedido sin insumos
-              suficientes no puede pasar a producción.
+            <span className="inline-flex items-center gap-1">
+              Permitir producir aunque falte material
+              <InfoTip text="Activado: se puede pasar a producción con faltante, previa confirmación, y queda un aviso en Notificaciones. Desactivado: el sistema lo impide." />
             </span>
+            <span className="block text-xs text-ink-muted">Recomendado mientras el inventario físico no esté capturado.</span>
           </span>
         </label>
-      </section>
+      </Section>
+
+      <Section icon={LayoutDashboard} title="Tablero y fechas" help="Cómo se calculan las fechas y qué se ve en el tablero.">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <SelectField label="Zona horaria" value={timezone} onChange={(e) => setTimezone(e.target.value)} disabled={saving}
+            help="Define qué es «hoy», «mañana» y «vencido» en el tablero, el calendario y la app de entregas.">
+            {(TIMEZONES.includes(settings.timezone) ? TIMEZONES : [settings.timezone, ...TIMEZONES]).map((tz) => (
+              <option key={tz} value={tz}>
+                {TZ_LABEL[tz] ?? tz}
+              </option>
+            ))}
+          </SelectField>
+          <TextField label="Días que se ven los entregados" inputMode="numeric" value={deliveredDays}
+            onChange={(e) => setDeliveredDays(e.target.value.replace(/\D/g, ""))} disabled={saving}
+            help="Cuántos días permanece un pedido en la columna «Entregado» del tablero. Los que tienen adeudo siempre se ven." />
+        </div>
+      </Section>
+
+      <Section icon={ShieldCheck} title="Seguridad" help="Protección del panel en computadoras compartidas.">
+        <SelectField label="Cerrar sesión por inactividad" value={inactivity} onChange={(e) => setInactivity(e.target.value)} disabled={saving}
+          help="Si nadie usa el panel durante este tiempo, la sesión se cierra sola y hay que volver a entrar.">
+          <option value="15">A los 15 minutos</option>
+          <option value="30">A los 30 minutos (recomendado)</option>
+          <option value="60">A la hora</option>
+          <option value="120">A las 2 horas</option>
+        </SelectField>
+      </Section>
+
+      <Section icon={Palette} title="Apariencia" help="Solo afecta a esta computadora. Se guarda al instante.">
+        <div role="radiogroup" aria-label="Tema" className="flex flex-wrap gap-2">
+          {(
+            [
+              ["system", "Igual que el sistema"],
+              ["light", "Claro"],
+              ["dark", "Oscuro"],
+            ] as [ThemePreference, string][]
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={themePref === value}
+              onClick={() => setTheme(value)}
+              className={`min-h-10 rounded-full border-2 px-4 text-sm font-semibold ${
+                themePref === value ? "border-primary bg-primary text-primary-ink" : "border-line bg-surface-0 text-ink-strong"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </Section>
+
       {error && (
         <p role="alert" className="text-sm font-semibold text-blocked-ink">
           [!] {error}

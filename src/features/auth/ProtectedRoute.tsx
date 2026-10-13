@@ -11,8 +11,9 @@ import { useInactivityLogout } from "./useInactivityLogout";
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const status = useAuthStore((s) => s.status);
   const loadSettings = useSettingsStore((s) => s.load);
+  const inactivityMinutes = useSettingsStore((s) => s.inactivity_minutes);
 
-  useInactivityLogout(status === "ready");
+  useInactivityLogout(status === "ready", inactivityMinutes * 60 * 1000);
 
   useEffect(() => {
     if (status === "ready") void loadSettings();

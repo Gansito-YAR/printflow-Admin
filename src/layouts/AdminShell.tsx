@@ -16,6 +16,7 @@ const NAV = [
   { to: "/", label: "Tablero", end: true },
   { to: "/pedidos/nuevo", label: "Nuevo pedido", end: true },
   { to: "/pedidos", label: "Pedidos", end: true },
+  { to: "/calendario", label: "Calendario de entregas", end: false },
   { to: "/clientes", label: "Clientes", end: false },
   { to: "/productos", label: "Productos y recetas", end: false },
   { to: "/insumos", label: "Insumos", end: false },

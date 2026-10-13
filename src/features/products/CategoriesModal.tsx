@@ -132,7 +132,7 @@ export function CategoriesModal({
         >
           <div className="flex-1">
             <TextField
-              label="Nueva categoría"
+              label="Nueva categoría" help="Grupo de productos. Ej.: Rotulación."
               value={newName}
               onChange={(e) => {
                 setNewName(e.target.value);
@@ -162,7 +162,7 @@ export function CategoriesModal({
                 >
                   <div className="flex-1">
                     <TextField
-                      label={`Nuevo nombre para ${c.name}`}
+                      label={`Nuevo nombre para ${c.name}`} help="El nombre cambia en todo el sistema."
                       value={editName}
                       onChange={(e) => {
                         setEditName(e.target.value);

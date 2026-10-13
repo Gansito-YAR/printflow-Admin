@@ -12,6 +12,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { fetchKanbanOrders, fetchOrderSummary } from "../../lib/queries";
 import { toAppError } from "../../lib/errors";
 import type { OrderSummary } from "../../lib/types";
+import { useSettingsStore } from "../../store/settings";
 
 export type RealtimeStatus = "connecting" | "connected" | "disconnected" | "error";
 
@@ -30,7 +31,7 @@ export function useRealtimeOrders() {
   const loadAll = useCallback(async () => {
     try {
       setError(null);
-      const data = await fetchKanbanOrders();
+      const data = await fetchKanbanOrders(useSettingsStore.getState().kanban_delivered_days);
       setOrders(data.sort(byPromisedDate));
     } catch (err) {
       setError(toAppError(err).userText);

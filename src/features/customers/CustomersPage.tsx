@@ -47,10 +47,10 @@ export function CustomersPage() {
           <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Clientes</h1>
           <p className="text-sm text-ink-muted">Se muestran hasta 50 resultados.</p>
         </div>
-        <Button onClick={() => setEditing("new")}>+ Cliente nuevo</Button>
+        <Button title="Registrar un cliente con su teléfono y tarifa" onClick={() => setEditing("new")}>+ Cliente nuevo</Button>
       </div>
       <div className="w-full sm:w-80">
-        <TextField enterKeyHint="search" autoComplete="off" label="Buscar" placeholder="Nombre o teléfono" value={term} onChange={(e) => setTerm(e.target.value)} />
+        <TextField enterKeyHint="search" autoComplete="off" label="Buscar" help="Escriba parte del nombre o del teléfono." placeholder="Nombre o teléfono" value={term} onChange={(e) => setTerm(e.target.value)} />
       </div>
       {error && <ErrorPanel message={error} onRetry={() => setVersion((v) => v + 1)} />}
       {loading ? (
@@ -70,7 +70,7 @@ export function CustomersPage() {
             { key: "active", header: "Estado", render: (c) => (c.is_active ? "Activo" : "Inactivo") },
           ]}
           actions={(c) => (
-            <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(c)}>
+            <Button title="Cambiar datos, tarifa o desactivar al cliente" variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(c)}>
               Editar
             </Button>
           )}

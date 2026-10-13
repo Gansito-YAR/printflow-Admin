@@ -17,6 +17,7 @@ import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { MaterialsPage } from "./features/materials/MaterialsPage";
 import { ProfitPage } from "./features/reports/ProfitPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
+import { CalendarPage } from "./features/calendar/CalendarPage";
 import { ActivityPage } from "./features/activity/ActivityPage";
 
 /** true en pantallas de escritorio (≥ 1024 px). */
@@ -52,6 +53,7 @@ export default function App() {
           >
             <Route index element={<KanbanPage />} />
             <Route path="pedidos" element={<OrderHistoryPage />} />
+            <Route path="calendario" element={<CalendarPage />} />
             <Route path="pedidos/nuevo" element={<NewOrderPage />} />
             <Route path="pedidos/:folio" element={<OrderDetailPage />} />
             <Route path="clientes" element={<CustomersPage />} />

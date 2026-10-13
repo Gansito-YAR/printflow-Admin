@@ -58,7 +58,11 @@ export function NewOrderPage() {
   const [productsError, setProductsError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
-  const [promised, setPromised] = useState("");
+  const leadDays = useSettingsStore((s) => s.default_lead_days);
+  // Fecha sugerida: hoy + días configurados, a la misma hora (siempre editable).
+  const [promised, setPromised] = useState(() =>
+    toDateTimeLocal(new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000).toISOString(), timezone),
+  );
   const [notes, setNotes] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
@@ -270,7 +274,7 @@ export function NewOrderPage() {
         <div className="flex flex-col gap-4">
           <h2 className="font-bold text-ink-strong">3. Entrega</h2>
           <TextField
-            label="Fecha pactada de entrega"
+            label="Fecha pactada de entrega" help="Fecha y hora prometida al cliente. Después solo se cambia con motivo."
             type="datetime-local"
             min={minDate}
             value={promised}
@@ -282,7 +286,7 @@ export function NewOrderPage() {
             required
           />
           <TextAreaField
-            label="Notas"
+            label="Notas" help="Indicaciones de diseño o instalación. Salen en la remisión."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={submitting}

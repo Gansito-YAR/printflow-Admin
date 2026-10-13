@@ -31,6 +31,8 @@ const s = StyleSheet.create({
   logo: { width: 80, height: 80 },
   headerText: { marginLeft: 12, flex: 1 },
   company: { fontSize: 15, fontFamily: "Helvetica-Bold" },
+  contact: { fontSize: 8, color: pdfTheme.inkMuted, marginTop: 2 },
+  terms: { marginTop: 10, width: 330, fontSize: 8, color: pdfTheme.inkMuted },
   docTitle: { fontSize: 11, marginTop: 2 },
   folio: { fontFamily: "Helvetica-Bold", fontSize: 12, marginTop: 4 },
   muted: { color: pdfTheme.inkMuted },
@@ -61,6 +63,16 @@ const s = StyleSheet.create({
   pageNo: { position: "absolute", top: 6 * MM, right: 12 * MM, fontSize: 7, color: pdfTheme.inkMuted },
 });
 
+/** Datos del negocio que se imprimen (Configuración › Datos del negocio). */
+export interface RemissionBusiness {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  rfc: string | null;
+  footer: string | null;
+}
+
 /** El código (UUID) en dos líneas legibles, cortando en un guion: "94c86068-b5eb-468c-" / "baa1-b5c879fef5d5". */
 export function qrCodeLines(code: string): [string, string] {
   const cut = code.indexOf("-", 14);
@@ -73,24 +85,30 @@ export function RemissionDocument({
   qrDataUrl,
   timezone,
   logoSrc,
+  business,
 }: {
   order: OrderDetail;
   paid: string;
   qrDataUrl: string;
   timezone: string;
   logoSrc: string;
+  business: RemissionBusiness;
 }) {
+  const contact = [business.address, business.phone && `Tel. ${business.phone}`, business.email, business.rfc && `RFC ${business.rfc}`]
+    .filter(Boolean)
+    .join("  ·  ");
   const settled = isZero(order.balance_due);
 
   return (
-    <Document title={`Remisión ${order.folio}`} author="Imprenta Escalante">
+    <Document title={`Remisión ${order.folio}`} author={business.name}>
       <Page size="LETTER" style={s.page}>
         <Text style={s.pageNo} fixed render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
 
         <View style={s.header} fixed>
           <Image src={logoSrc} style={s.logo} />
           <View style={s.headerText}>
-            <Text style={s.company}>IMPRENTA ESCALANTE</Text>
+            <Text style={s.company}>{business.name.toUpperCase()}</Text>
+            {contact ? <Text style={s.contact}>{contact}</Text> : null}
             <Text style={s.docTitle}>Nota de remisión</Text>
             <Text style={s.folio}>Folio: {order.folio}</Text>
             <Text style={s.muted}>Fecha de emisión: {formatDateTime(new Date().toISOString(), timezone)}</Text>
@@ -163,6 +181,13 @@ export function RemissionDocument({
             ))
           )}
         </View>
+
+        {business.footer ? (
+          <View style={s.terms} wrap={false}>
+            <Text style={s.bold}>Condiciones:</Text>
+            <Text>{business.footer}</Text>
+          </View>
+        ) : null}
 
         <View
           style={s.qrBlock}

@@ -96,7 +96,7 @@ export function CustomerForm({
         required
       />
       <TextField
-        label="Nombre o razón social"
+        label="Nombre o razón social" help="Como aparecerá en pedidos y remisiones."
         value={name}
         onChange={(e) => setName(e.target.value)}
         error={errors.name}
@@ -105,7 +105,7 @@ export function CustomerForm({
         required
       />
       <SelectField
-        label="Tarifa"
+        label="Tarifa" help="Mayoreo: siempre precio de mayoreo. Menudeo: solo al llegar a la cantidad mínima del producto."
         value={tier}
         onChange={(e) => setTier(e.target.value as PricingTier)}
         hint="Mayoreo aplica precio de mayoreo en todos sus pedidos (BRD regla 1)."
@@ -117,7 +117,7 @@ export function CustomerForm({
           </option>
         ))}
       </SelectField>
-      <TextAreaField label="Notas" value={notes} onChange={(e) => setNotes(e.target.value)} disabled={saving} />
+      <TextAreaField label="Notas" help="Datos útiles del cliente. Solo los ve el administrador." value={notes} onChange={(e) => setNotes(e.target.value)} disabled={saving} />
       {customer && (
         <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
           <input type="checkbox" className="h-5 w-5 shrink-0" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />

@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import type { OrderDetail } from "../../lib/types";
 import { toCents } from "../../utils/money";
 import { Button } from "../../components/ui";
+import { useSettingsStore } from "../../store/settings";
 
 function centsToString(c: bigint): string {
   const neg = c < 0n;
@@ -37,6 +38,16 @@ export function derivePaid(order: Pick<OrderDetail, "total_price" | "balance_due
 export function RemissionButton({ order, timezone }: { order: OrderDetail; timezone: string }) {
   const [state, setState] = useState<"idle" | "generating" | "error">("idle");
 
+  const settings = useSettingsStore();
+  const business = {
+    name: settings.business_name,
+    phone: settings.business_phone,
+    email: settings.business_email,
+    address: settings.business_address,
+    rfc: settings.business_rfc,
+    footer: settings.remission_footer,
+  };
+
   async function generate() {
     if (state === "generating") return;
     const paid = derivePaid(order);
@@ -60,6 +71,7 @@ export function RemissionButton({ order, timezone }: { order: OrderDetail; timez
           qrDataUrl={qrDataUrl}
           timezone={timezone}
           logoSrc={`${window.location.origin}/brand/logo-pdf.png`}
+          business={business}
         />,
       ).toBlob();
       const url = URL.createObjectURL(blob);
@@ -77,6 +89,7 @@ export function RemissionButton({ order, timezone }: { order: OrderDetail; timez
 
   return (
     <Button
+      title="Descargar la nota de remisión en PDF con el código QR para la entrega"
       variant="secondary"
       onClick={() => void generate()}
       loading={state === "generating"}

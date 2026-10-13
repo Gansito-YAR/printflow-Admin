@@ -50,17 +50,18 @@ export function AdvancedActions({
       <h2 className="font-bold text-ink-strong">Acciones avanzadas</h2>
       <p className="text-xs text-ink-muted">Requieren confirmar su contraseña y un motivo. Quedan en la bitácora.</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-3">
-        <Button variant="secondary" onClick={() => setAction("reschedule")} disabled={closed}>
+        <Button variant="secondary" title="Cambiar la fecha de entrega prometida al cliente" onClick={() => setAction("reschedule")} disabled={closed}>
           Reprogramar fecha
         </Button>
-        <Button variant="secondary" onClick={() => setAction("override")} disabled={order.status !== "PENDING_DEPOSIT"}>
+        <Button variant="secondary" title="Producir aunque el cliente no haya dado el anticipo mínimo" onClick={() => setAction("override")} disabled={order.status !== "PENDING_DEPOSIT"}>
           Producción sin anticipo
         </Button>
-        <Button variant="danger" onClick={() => setAction("cancel")} disabled={closed}>
+        <Button variant="danger" title="Cancelar el pedido. Si ya usó material, puede regresarlo al inventario" onClick={() => setAction("cancel")} disabled={closed}>
           Cancelar pedido
         </Button>
         <Button
           variant="danger"
+          title="Entregar aunque deba: el saldo queda por cobrar (clientes con crédito)"
           onClick={() => setAction("force")}
           disabled={order.status !== "READY_FOR_DELIVERY" || isZero(order.balance_due)}
           aria-describedby={forceHint ? "force-hint" : undefined}
@@ -74,10 +75,12 @@ export function AdvancedActions({
           {forceHint}
         </p>
       )}
-      <p className="text-xs text-ink-muted">
-        Forzar entrega es la única forma de entregar con saldo pendiente: el saldo queda por cobrar y la autorización
-        queda en la bitácora con su motivo.
-      </p>
+      <ul className="grid grid-cols-1 gap-1 text-xs text-ink-muted sm:grid-cols-2">
+        <li><b className="text-ink-base">Reprogramar fecha:</b> cambia la fecha prometida al cliente.</li>
+        <li><b className="text-ink-base">Producción sin anticipo:</b> produce aunque no haya pagado el mínimo.</li>
+        <li><b className="text-ink-base">Cancelar pedido:</b> lo cancela; el material usado puede regresar al inventario.</li>
+        <li><b className="text-ink-base">Forzar entrega:</b> entrega con saldo pendiente; queda por cobrar.</li>
+      </ul>
       {action && (
         <ActionModal
           action={action}
@@ -205,7 +208,7 @@ function ActionModal({
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
           {action === "reschedule" && (
             <TextField
-              label="Nueva fecha pactada"
+              label="Nueva fecha pactada" help="Nueva fecha comprometida con el cliente."
               type="datetime-local"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -241,7 +244,7 @@ function ActionModal({
               {consumed.map((c) => (
                 <TextField
                   key={c.raw_material_id}
-                  label={`${c.name} (consumido ${formatQty(c.consumed)} ${MATERIAL_UNIT_LABEL[c.unit as MaterialUnit] ?? c.unit})`}
+                  label={`${c.name} (consumido ${formatQty(c.consumed)} ${MATERIAL_UNIT_LABEL[c.unit as MaterialUnit] ?? c.unit})`} help="Cuánto material se recuperó. Regresa al inventario."
                   inputMode="decimal"
                   value={returns[c.raw_material_id] ?? "0"}
                   onChange={(e) => setReturns((r) => ({ ...r, [c.raw_material_id]: e.target.value }))}
@@ -251,7 +254,7 @@ function ActionModal({
             </fieldset>
           )}
           <TextAreaField
-            label="Motivo"
+            label="Motivo" help="Obligatorio. Queda en la bitácora con su nombre."
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             disabled={saving}

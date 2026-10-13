@@ -99,10 +99,10 @@ export function ProductsPage() {
           <p className="text-sm text-ink-muted">Cambiar un precio no afecta pedidos ya creados.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button variant="secondary" onClick={() => setManaging(true)} data-testid="manage-categories">
+          <Button title="Crear, ordenar y desactivar categorías de productos" variant="secondary" onClick={() => setManaging(true)} data-testid="manage-categories">
             Categorías
           </Button>
-          <Button onClick={() => setEditing("new")}>+ Producto</Button>
+          <Button title="Dar de alta un producto con sus precios" onClick={() => setEditing("new")}>+ Producto</Button>
         </div>
       </div>
       <div role="tablist" aria-label="Productos" className="flex gap-2">
@@ -154,13 +154,13 @@ export function ProductsPage() {
           ]}
           actions={(p) => (
             <>
-              <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setRecipeOf(p)}>
+              <Button title="Definir qué insumos consume y ver su costo y margen" variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setRecipeOf(p)}>
                 Receta y costo
               </Button>
-              <Button variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(p)}>
+              <Button title="Cambiar precios, categoría o datos del producto" variant="secondary" className="md:border-transparent md:bg-transparent" onClick={() => setEditing(p)}>
                 Editar
               </Button>
-              <Button
+              <Button title={p.archived_at ? "Volver a mostrarlo en listas y selectores" : "Ocultarlo de las listas sin afectar recetas ni pedidos"}
                 variant="secondary"
                 className="md:border-transparent md:bg-transparent"
                 loading={busy === p.id}
@@ -168,7 +168,7 @@ export function ProductsPage() {
               >
                 {p.archived_at ? "Restaurar" : "Archivar"}
               </Button>
-              <Button
+              <Button title="Ocultar el producto. Los pedidos que ya lo tienen no cambian"
                 variant="secondary"
                 className="text-blocked-ink md:border-transparent md:bg-transparent"
                 disabled={busy !== null}
@@ -297,11 +297,11 @@ function ProductForm({
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <TextField label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} disabled={saving} required />
-        <TextField label="Nombre" value={name} onChange={(e) => setName(e.target.value)} disabled={saving} required />
+        <TextField label="SKU" help="Clave interna del producto. No se repite." value={sku} onChange={(e) => setSku(e.target.value)} disabled={saving} required />
+        <TextField label="Nombre" help="Como aparece en pedidos y remisiones." value={name} onChange={(e) => setName(e.target.value)} disabled={saving} required />
         <div className="flex flex-col gap-2">
           <SelectField
-            label="Categoría"
+            label="Categoría" help="Grupo en el que aparece al capturar pedidos."
             value={categoryId}
             onChange={(e) => {
               setCategoryId(e.target.value);
@@ -321,7 +321,7 @@ function ProductForm({
           {categoryId === NEW_CATEGORY && (
             <div className="flex flex-col gap-2 rounded-md border border-line bg-surface-1 p-3">
               <TextField
-                label="Nombre de la nueva categoría"
+                label="Nombre de la nueva categoría" help="Se crea y queda seleccionada."
                 value={newCategory}
                 onChange={(e) => {
                   setNewCategory(e.target.value);
@@ -359,7 +359,7 @@ function ProductForm({
           )}
         </div>
         <SelectField
-          label="Unidad de cobro"
+          label="Unidad de cobro" help="Por pieza o por m². No se cambia después de crear el producto."
           value={unit}
           onChange={(e) => setUnit(e.target.value as PricingUnit)}
           disabled={saving || Boolean(product)}
@@ -370,10 +370,10 @@ function ProductForm({
             </option>
           ))}
         </SelectField>
-        <TextField label="Precio menudeo" inputMode="decimal" value={retail} onChange={(e) => setRetail(e.target.value)} disabled={saving} required />
-        <TextField label="Precio mayoreo" inputMode="decimal" value={wholesale} onChange={(e) => setWholesale(e.target.value)} disabled={saving} required />
+        <TextField label="Precio menudeo" help="Precio normal por pieza o m²." inputMode="decimal" value={retail} onChange={(e) => setRetail(e.target.value)} disabled={saving} required />
+        <TextField label="Precio mayoreo" help="Precio para clientes de mayoreo o compras grandes." inputMode="decimal" value={wholesale} onChange={(e) => setWholesale(e.target.value)} disabled={saving} required />
         <TextField
-          label="Cantidad mínima para mayoreo"
+          label="Cantidad mínima para mayoreo" help="Desde esta cantidad, un cliente de menudeo paga precio de mayoreo."
           inputMode="decimal"
           value={minQty}
           onChange={(e) => setMinQty(e.target.value)}
@@ -381,7 +381,7 @@ function ProductForm({
           disabled={saving}
         />
         <TextField
-          label={`Costo fijo por ${unit === "M2" ? "m²" : "pieza"}`}
+          label={`Costo fijo por ${unit === "M2" ? "m²" : "pieza"}`} help="Mano de obra, energía y máquina por unidad. Solo para calcular la utilidad."
           inputMode="decimal"
           value={fixedCost}
           onChange={(e) => setFixedCost(e.target.value)}

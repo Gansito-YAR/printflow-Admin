@@ -67,6 +67,16 @@ export interface BusinessSettings {
   deposit_pct: string;
   timezone: string;
   allow_negative_stock: boolean;
+  // Configuración ampliada (13/10/2026)
+  business_name: string;
+  business_phone: string | null;
+  business_email: string | null;
+  business_address: string | null;
+  business_rfc: string | null;
+  remission_footer: string | null;
+  default_lead_days: number;
+  kanban_delivered_days: number;
+  inactivity_minutes: number;
 }
 
 export interface Customer {

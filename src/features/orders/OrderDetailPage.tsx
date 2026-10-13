@@ -22,6 +22,7 @@ import { formatPhone } from "../../utils/phone";
 import { useShortageGuard } from "./useShortageGuard";
 import { ExceedsBadge } from "../../components/ExceedsBadge";
 import { useOrdersExceeding } from "../../store/notifications";
+import { InfoTip } from "../../components/InfoTip";
 
 const NEXT: Partial<Record<OrderStatus, "IN_PRODUCTION" | "READY_FOR_DELIVERY">> = {
   PENDING_DEPOSIT: "IN_PRODUCTION",
@@ -139,12 +140,12 @@ export function OrderDetailPage() {
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-3">
         {!closed && !isZero(order.balance_due) && (
-          <Button onClick={() => setPaying(true)} className="hidden lg:inline-flex" data-testid="button-open-payment">
+          <Button title="Cobrar un pago y actualizar el saldo" onClick={() => setPaying(true)} className="hidden lg:inline-flex" data-testid="button-open-payment">
             Registrar abono
           </Button>
         )}
         {next && (
-          <Button variant="secondary" onClick={() => void advance(next)} loading={advancing}>
+          <Button title={next === "IN_PRODUCTION" ? "Iniciar producción: descuenta insumos y congela el costo. Requiere el anticipo mínimo." : "Marcar como terminado: aparece en la ruta de los instaladores."} variant="secondary" onClick={() => void advance(next)} loading={advancing}>
             Pasar a “{STATUS_LABEL[next]}”
           </Button>
         )}
@@ -158,7 +159,7 @@ export function OrderDetailPage() {
       )}
 
       <section className="rounded-md border border-line bg-surface-0 p-4 md:p-6">
-        <h2 className="mb-3 font-bold text-ink-strong">Partidas</h2>
+        <h2 className="flex items-center gap-1 mb-3 font-bold text-ink-strong">Partidas <InfoTip text="Lo vendido en este pedido, con el precio que se aplicó." /></h2>
         <DataList
           label="Partidas"
           rows={order.items}
@@ -189,7 +190,7 @@ export function OrderDetailPage() {
 
       <div>
         <section className="rounded-md border border-line bg-surface-0 p-4 md:p-6">
-          <h2 className="mb-3 font-bold text-ink-strong">Abonos</h2>
+          <h2 className="flex items-center gap-1 mb-3 font-bold text-ink-strong">Abonos <InfoTip text="Cada pago recibido, con fecha, método y quién lo cobró." /></h2>
           {order.payments.length === 0 ? (
             <p className="text-sm text-ink-muted">Sin abonos.</p>
           ) : (
@@ -211,7 +212,7 @@ export function OrderDetailPage() {
 
       <section id="bitacora" aria-label="Bitácora del pedido" className="scroll-mt-4 rounded-md border-2 border-line-strong bg-surface-0 p-4 md:p-6">
         <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-bold text-ink-strong">Bitácora del pedido</h2>
+          <h2 className="flex items-center gap-1 text-lg font-bold text-ink-strong">Bitácora del pedido <InfoTip text="Todo lo que se hizo con este pedido. No se puede editar ni borrar." /></h2>
           <Link to="/bitacora" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent underline md:min-h-0">
             Ver bitácora general
           </Link>
@@ -270,7 +271,7 @@ export function OrderDetailPage() {
               </span>
             }
           >
-            <Button onClick={() => setPaying(true)} data-testid="button-open-payment-mobile">
+            <Button title="Cobrar un pago y actualizar el saldo" onClick={() => setPaying(true)} data-testid="button-open-payment-mobile">
               Registrar abono
             </Button>
           </StickyActions>

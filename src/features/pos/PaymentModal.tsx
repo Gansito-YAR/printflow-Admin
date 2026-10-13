@@ -122,7 +122,7 @@ export function PaymentModal({
         </div>
 
         <TextField
-          label="Monto del abono"
+          label="Monto del abono" help="Cuánto paga el cliente ahora. No puede pasar del saldo."
           inputMode="decimal"
           placeholder="0.00"
           value={amount}
@@ -135,7 +135,7 @@ export function PaymentModal({
         />
 
         <SelectField
-          label="Método de pago"
+          label="Método de pago" help="Cómo pagó. Verifique las transferencias antes de registrarlas."
           value={method}
           onChange={(e) => setMethod(e.target.value as PaymentMethod | "")}
           disabled={submitting}

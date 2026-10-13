@@ -69,10 +69,10 @@ export function OrderHistoryPage() {
       </div>
       <FilterBar active={[term.trim(), status !== "ALL", from, to].filter(Boolean).length}>
         <div>
-          <TextField enterKeyHint="search" autoComplete="off" autoCapitalize="characters" label="Folio" placeholder="PF-…" value={term} onChange={(e) => resetPage(setTerm)(e.target.value)} />
+          <TextField enterKeyHint="search" autoComplete="off" autoCapitalize="characters" label="Folio" help="Busque un pedido por su folio, ej. PF-QSCBLW." placeholder="PF-…" value={term} onChange={(e) => resetPage(setTerm)(e.target.value)} />
         </div>
         <div>
-          <SelectField label="Estado" value={status} onChange={(e) => resetPage(setStatus)(e.target.value as OrderStatus | "ALL")}>
+          <SelectField label="Estado" help="Ver solo los pedidos en ese estado." value={status} onChange={(e) => resetPage(setStatus)(e.target.value as OrderStatus | "ALL")}>
             <option value="ALL">Todos</option>
             {(Object.keys(STATUS_LABEL) as OrderStatus[]).map((s) => (
               <option key={s} value={s}>
@@ -82,10 +82,10 @@ export function OrderHistoryPage() {
           </SelectField>
         </div>
         <div>
-          <TextField label="Registrado desde" type="date" value={from} onChange={(e) => resetPage(setFrom)(e.target.value)} />
+          <TextField label="Registrado desde" help="Fecha en que se capturó el pedido." type="date" value={from} onChange={(e) => resetPage(setFrom)(e.target.value)} />
         </div>
         <div>
-          <TextField label="Hasta" type="date" value={to} onChange={(e) => resetPage(setTo)(e.target.value)} />
+          <TextField label="Hasta" help="Último día de captura a incluir." type="date" value={to} onChange={(e) => resetPage(setTo)(e.target.value)} />
         </div>
       </FilterBar>
       {error && <ErrorPanel message={error} onRetry={() => setVersion((v) => v + 1)} />}

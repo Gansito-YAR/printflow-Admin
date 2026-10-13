@@ -1,5 +1,5 @@
-// Configuración del negocio: anticipo mínimo (D-07), zona horaria operativa
-// (D-08) y stock negativo permitido (M4-D-07).
+// Configuración del negocio: reglas (anticipo, zona horaria, stock negativo),
+// datos para la remisión, días sugeridos de entrega, tablero y seguridad.
 
 import { create } from "zustand";
 import { supabase } from "../lib/supabaseClient";
@@ -10,19 +10,30 @@ interface SettingsState extends BusinessSettings {
   loaded: boolean;
   load: () => Promise<void>;
   /** RLS: solo un ADMIN puede escribir. La base valida rango y zona horaria. */
-  save: (changes: BusinessSettings) => Promise<void>;
+  save: (changes: Partial<BusinessSettings>) => Promise<void>;
 }
 
-const SELECT = "deposit_pct::text, timezone, allow_negative_stock";
+const SELECT =
+  "deposit_pct::text, timezone, allow_negative_stock, business_name, business_phone, business_email, " +
+  "business_address, business_rfc, remission_footer, default_lead_days, kanban_delivered_days, inactivity_minutes";
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   deposit_pct: "50",
   timezone: "America/Mexico_City",
   allow_negative_stock: true,
+  business_name: "Imprenta Escalante",
+  business_phone: null,
+  business_email: null,
+  business_address: null,
+  business_rfc: null,
+  remission_footer: null,
+  default_lead_days: 3,
+  kanban_delivered_days: 7,
+  inactivity_minutes: 30,
   loaded: false,
   async load() {
     const { data } = await supabase.from("business_settings").select(SELECT).maybeSingle();
-    if (data) set({ ...(data as BusinessSettings), loaded: true });
+    if (data) set({ ...(data as unknown as BusinessSettings), loaded: true });
   },
   async save(changes) {
     const { data, error } = await supabase
@@ -32,6 +43,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       .select(SELECT)
       .single();
     if (error) throw toAppError(error);
-    set({ ...(data as BusinessSettings), loaded: true });
+    set({ ...(data as unknown as BusinessSettings), loaded: true });
   },
 }));

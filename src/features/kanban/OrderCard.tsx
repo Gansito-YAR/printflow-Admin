@@ -76,7 +76,7 @@ export function OrderCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           {(!delivered || onCredit) && !paid && (
-            <Button
+            <Button title="Cobrar un pago de este pedido sin abrirlo"
               variant="primary"
               className="px-3 py-1 text-xs md:min-h-8"
               onClick={() => onRegisterPayment(order)}

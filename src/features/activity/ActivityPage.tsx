@@ -94,7 +94,7 @@ export function ActivityPage() {
 
       <FilterBar active={[category !== "ALL", actor !== "ALL", term.trim(), from, to].filter(Boolean).length}>
         <div>
-          <SelectField label="Tipo" value={category} onChange={(e) => reset(setCategory)(e.target.value as ActivityCategory | "ALL")}>
+          <SelectField label="Tipo" help="Qué clase de acciones ver: pedidos, inventario, clientes, productos…" value={category} onChange={(e) => reset(setCategory)(e.target.value as ActivityCategory | "ALL")}>
             <option value="ALL">Todo</option>
             {(Object.keys(CATEGORY_LABEL_ACTIVITY) as ActivityCategory[]).map((c) => (
               <option key={c} value={c}>
@@ -104,7 +104,7 @@ export function ActivityPage() {
           </SelectField>
         </div>
         <div>
-          <SelectField label="Usuario" value={actor} onChange={(e) => reset(setActor)(e.target.value)}>
+          <SelectField label="Usuario" help="Solo las acciones que hizo esta persona." value={actor} onChange={(e) => reset(setActor)(e.target.value)}>
             <option value="ALL">Todos</option>
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
@@ -114,13 +114,13 @@ export function ActivityPage() {
           </SelectField>
         </div>
         <div>
-          <TextField enterKeyHint="search" autoComplete="off" autoCapitalize="characters" label="Folio o nombre" placeholder="PF-… / Lona…" value={term} onChange={(e) => reset(setTerm)(e.target.value)} />
+          <TextField enterKeyHint="search" autoComplete="off" autoCapitalize="characters" label="Folio o nombre" help="Busque por folio de pedido o por nombre de cliente, producto o insumo." placeholder="PF-… / Lona…" value={term} onChange={(e) => reset(setTerm)(e.target.value)} />
         </div>
         <div>
-          <TextField label="Desde" type="date" value={from} onChange={(e) => reset(setFrom)(e.target.value)} />
+          <TextField label="Desde" help="Primer día a revisar." type="date" value={from} onChange={(e) => reset(setFrom)(e.target.value)} />
         </div>
         <div>
-          <TextField label="Hasta" type="date" value={to} onChange={(e) => reset(setTo)(e.target.value)} />
+          <TextField label="Hasta" help="Último día a revisar." type="date" value={to} onChange={(e) => reset(setTo)(e.target.value)} />
         </div>
       </FilterBar>
 

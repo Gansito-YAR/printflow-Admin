@@ -43,6 +43,7 @@ export function KanbanPage() {
   const [showDelivered, setShowDelivered] = useState(false);
   const [paying, setPaying] = useState<OrderSummary | null>(null);
   // Celular (RSP-11): un carril a la vez, elegido con pestañas.
+  const deliveredDays = useSettingsStore((s) => s.kanban_delivered_days);
   const [mobileLane, setMobileLane] = useState<OrderStatus>("IN_PRODUCTION");
 
   const filtered = useMemo(() => {
@@ -99,7 +100,7 @@ export function KanbanPage() {
       <FilterBar active={(search.trim() ? 1 : 0) + (urgencyFilter !== "ALL" ? 1 : 0)}>
         <div className="lg:w-72!">
           <TextField enterKeyHint="search" autoComplete="off"
-            label="Buscar"
+            label="Buscar" help="Folio, nombre del cliente o teléfono."
             placeholder="Folio, cliente o teléfono"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -108,7 +109,7 @@ export function KanbanPage() {
         </div>
         <div>
           <SelectField
-            label="Fecha pactada"
+            label="Fecha pactada" help="Muestra solo lo vencido y de hoy, o lo que vence mañana."
             value={urgencyFilter}
             onChange={(e) => setUrgencyFilter(e.target.value as UrgencyFilter)}
           >
@@ -192,7 +193,7 @@ export function KanbanPage() {
                         onClick={() => setShowDelivered((v) => !v)}
                         className="text-left text-xs font-semibold text-brand-accent underline"
                       >
-                        {collapsed ? "Mostrar entregados (últimos 7 días)" : "Ocultar entregados"}
+                        {collapsed ? `Mostrar entregados (últimos ${deliveredDays} días)` : "Ocultar entregados"}
                       </button>
                     )}
                     {!collapsed && lane.length === 0 && <EmptyState>[EMPTY] Sin pedidos en este estado</EmptyState>}

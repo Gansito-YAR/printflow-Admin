@@ -64,7 +64,7 @@ export function UsersPage() {
           <h1 className="text-2xl font-display font-normal tracking-wide text-ink-strong">Usuarios</h1>
           <p className="text-sm text-ink-muted">Cree las cuentas de instaladores y administradores. Quedan activas al momento.</p>
         </div>
-        <Button onClick={() => setCreating(true)} data-testid="new-user">
+        <Button title="Crear la cuenta de un instalador o administrador" onClick={() => setCreating(true)} data-testid="new-user">
           + Nuevo usuario
         </Button>
       </div>
@@ -123,7 +123,7 @@ export function UsersPage() {
           ]}
           actions={(u) => (
             <>
-              <Button
+              <Button title="Poner una contraseña nueva y cerrar sus sesiones abiertas"
                 variant="secondary"
                 className="md:border-transparent md:bg-transparent"
                 disabled={busy !== null}

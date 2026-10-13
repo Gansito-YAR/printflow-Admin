@@ -11,6 +11,7 @@ import { formatMoney, parseAmountInput } from "../../utils/money";
 import { formatPct, formatQty, isNegative } from "../../utils/quantity";
 import { formatDateTime } from "../../utils/dates";
 import { Button, ErrorPanel, Modal, Spinner, TextField } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
 
 export function ProfitSummary({ costing }: { costing: OrderCosting }) {
   return (
@@ -64,7 +65,7 @@ export function CostingSection({ orderId, timezone }: { orderId: string; timezon
   return (
     <section className="rounded-md border border-line bg-surface-0 p-4 md:p-6" aria-label="Costos y utilidad">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-ink-strong">Costos y utilidad</h2>
+        <h2 className="flex items-center gap-1 font-bold text-ink-strong">Costos y utilidad <InfoTip text="Cuánto costó producir este pedido y cuánto deja. Confidencial: no lo ve el cliente ni los instaladores." /></h2>
         <Button variant="secondary" onClick={toggle} aria-expanded={open} data-testid="toggle-costing">
           {open ? "Ocultar" : "Mostrar (confidencial)"}
         </Button>
@@ -203,8 +204,8 @@ function ExtraCostModal({ orderId, onClose, onDone }: { orderId: string; onClose
   return (
     <Modal title="Gasto extra del pedido" onClose={onClose} locked={saving}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4" data-testid="extra-cost-form">
-        <TextField label="Concepto" value={concept} onChange={(e) => setConcept(e.target.value)} maxLength={120} disabled={saving} required />
-        <TextField label="Monto" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={saving} required />
+        <TextField label="Concepto" help="Ej.: flete, instalación, trabajo subcontratado." value={concept} onChange={(e) => setConcept(e.target.value)} maxLength={120} disabled={saving} required />
+        <TextField label="Monto" help="Se resta de la utilidad de este pedido." inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={saving} required />
         {error && (
           <p role="alert" className="text-sm font-semibold text-blocked-ink">
             [!] {error}
@@ -249,7 +250,7 @@ function VoidModal({ extra, onClose, onDone }: { extra: { id: string; concept: s
   return (
     <Modal title={`Anular gasto · ${extra.concept}`} onClose={onClose} locked={saving}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-        <TextField label="Motivo" value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} required />
+        <TextField label="Motivo" help="Por qué se anula. Queda en la bitácora." value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} required />
         {error && (
           <p role="alert" className="text-sm font-semibold text-blocked-ink">
             [!] {error}

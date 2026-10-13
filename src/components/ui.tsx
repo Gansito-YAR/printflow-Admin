@@ -16,6 +16,7 @@ import type { OrderStatus } from "../lib/types";
 import { STATUS_LABEL } from "../lib/types";
 import { URGENCY_LABEL, type Urgency } from "../utils/dates";
 import { lockScroll } from "../utils/scrollLock";
+import { InfoTip } from "./InfoTip";
 import { STATUS_ICON, statusVars } from "./status";
 
 // ----- Spinner ---------------------------------------------------------------
@@ -78,21 +79,26 @@ interface FieldShellProps {
   label: string;
   error?: string | null;
   hint?: string;
+  /** Ayuda breve que aparece en un "?" junto a la etiqueta. */
+  help?: string;
   required?: boolean;
   children: (ids: { id: string; describedBy: string | undefined; invalid: boolean }) => ReactNode;
 }
 
-export function FieldShell({ label, error, hint, required, children }: FieldShellProps) {
+export function FieldShell({ label, error, hint, help, required, children }: FieldShellProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-semibold text-ink-strong">
-        {label}
-        {required && <span aria-hidden className="text-brand-accent"> *</span>}
-      </label>
+      <span className="flex items-center gap-1">
+        <label htmlFor={id} className="text-sm font-semibold text-ink-strong">
+          {label}
+          {required && <span aria-hidden className="text-brand-accent"> *</span>}
+        </label>
+        {help && <InfoTip text={help} label={label} />}
+      </span>
       {children({ id, describedBy, invalid: Boolean(error) })}
       {hint && !error && (
         <p id={hintId} className="text-xs text-ink-muted">
@@ -116,12 +122,12 @@ function controlClass(invalid: boolean) {
   return `${CONTROL} ${invalid ? "border-2 border-blocked-line" : "border-line"}`;
 }
 
-type FieldBase = { label: string; error?: string | null; hint?: string };
+type FieldBase = { label: string; error?: string | null; hint?: string; help?: string };
 
 export const TextField = forwardRef<HTMLInputElement, FieldBase & InputHTMLAttributes<HTMLInputElement>>(
-  function TextField({ label, error, hint, required, className = "", ...rest }, ref) {
+  function TextField({ label, error, hint, help, required, className = "", ...rest }, ref) {
     return (
-      <FieldShell label={label} error={error} hint={hint} required={required}>
+      <FieldShell label={label} error={error} hint={hint} help={help} required={required}>
         {({ id, describedBy, invalid }) => (
           <input
             ref={ref}
@@ -142,13 +148,14 @@ export function SelectField({
   label,
   error,
   hint,
+  help,
   required,
   children,
   className = "",
   ...rest
 }: FieldBase & SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <FieldShell label={label} error={error} hint={hint} required={required}>
+    <FieldShell label={label} error={error} hint={hint} help={help} required={required}>
       {({ id, describedBy, invalid }) => (
         <select
           id={id}
@@ -169,12 +176,13 @@ export function TextAreaField({
   label,
   error,
   hint,
+  help,
   required,
   className = "",
   ...rest
 }: FieldBase & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <FieldShell label={label} error={error} hint={hint} required={required}>
+    <FieldShell label={label} error={error} hint={hint} help={help} required={required}>
       {({ id, describedBy, invalid }) => (
         <textarea
           id={id}

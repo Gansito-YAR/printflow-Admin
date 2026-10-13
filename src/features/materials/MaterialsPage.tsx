@@ -112,11 +112,11 @@ export function MaterialsPage() {
             El costo unitario es el promedio ponderado de las compras. Existencias y costo cambian solo con movimientos.
           </p>
         </div>
-        <Button onClick={() => setEditing("new")}>+ Insumo</Button>
+        <Button title="Dar de alta un material nuevo" onClick={() => setEditing("new")}>+ Insumo</Button>
       </div>
 
       <div className="w-full sm:w-56">
-        <SelectField label="Mostrar" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
+        <SelectField label="Mostrar" help="Activos: en uso. Bajo stock: en o bajo su mínimo. Archivados: ocultos." value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
           <option value="ACTIVE">Activos</option>
           <option value="LOW">Bajo stock mínimo</option>
           <option value="ARCHIVED">Archivados</option>
@@ -191,29 +191,29 @@ export function MaterialsPage() {
           ]}
           actions={(m) => (
             <>
-              <Button variant="secondary" onClick={() => setMoving({ material: m, kind: "restock" })} disabled={!m.is_active}>
+              <Button title="Registrar una compra: suma existencia y recalcula el costo promedio" variant="secondary" onClick={() => setMoving({ material: m, kind: "restock" })} disabled={!m.is_active}>
                 Reabastecer
               </Button>
               <Button variant="secondary" className="md:hidden" onClick={() => setMoreOf(m)} aria-haspopup="dialog">
                 Más acciones…
               </Button>
               <span className="hidden md:contents">
-                <Button variant="ghost" onClick={() => setMoving({ material: m, kind: "waste" })} disabled={!m.is_active}>
+                <Button title="Registrar material echado a perder fuera de un pedido" variant="ghost" onClick={() => setMoving({ material: m, kind: "waste" })} disabled={!m.is_active}>
                   Merma
                 </Button>
-                <Button variant="ghost" onClick={() => setMoving({ material: m, kind: "adjust" })}>
+                <Button title="Ajustar la existencia a lo que hay físicamente en bodega" variant="ghost" onClick={() => setMoving({ material: m, kind: "adjust" })}>
                   Conteo
                 </Button>
-                <Button variant="ghost" onClick={() => setKardexOf(m)}>
+                <Button title="Ver el historial de compras, consumos y ajustes" variant="ghost" onClick={() => setKardexOf(m)}>
                   Movimientos
                 </Button>
-                <Button variant="ghost" onClick={() => setEditing(m)}>
+                <Button title="Cambiar nombre, SKU o stock mínimo" variant="ghost" onClick={() => setEditing(m)}>
                   Editar
                 </Button>
-                <Button variant="ghost" loading={busy === m.id} onClick={() => void toggleArchived(m)}>
+                <Button variant="ghost" title={m.archived_at ? "Volver a mostrarlo en listas y selectores" : "Ocultarlo de las listas sin afectar recetas ni pedidos"} loading={busy === m.id} onClick={() => void toggleArchived(m)}>
                   {m.archived_at ? "Restaurar" : "Archivar"}
                 </Button>
-                <Button variant="ghost" className="text-blocked-ink" disabled={busy !== null} onClick={() => void remove(m)}>
+                <Button title="Ocultar el insumo de todo el sistema. Su historial se conserva" variant="ghost" className="text-blocked-ink" disabled={busy !== null} onClick={() => void remove(m)}>
                   Eliminar
                 </Button>
               </span>
@@ -334,10 +334,10 @@ function MaterialForm({
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4" data-testid="material-form">
       <div className="grid grid-cols-2 gap-4">
-        <TextField label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} disabled={saving} required />
-        <TextField label="Nombre" value={name} onChange={(e) => setName(e.target.value)} disabled={saving} required />
+        <TextField label="SKU" help="Clave interna del insumo. No se repite." value={sku} onChange={(e) => setSku(e.target.value)} disabled={saving} required />
+        <TextField label="Nombre" help="Como lo conocen en el taller." value={name} onChange={(e) => setName(e.target.value)} disabled={saving} required />
         <SelectField
-          label="Unidad"
+          label="Unidad" help="Cómo se compra y se cuenta: m², pieza, litro… No se cambia después."
           value={unit}
           onChange={(e) => setUnit(e.target.value as MaterialUnit)}
           disabled={saving || Boolean(material)}
@@ -354,7 +354,7 @@ function MaterialForm({
           ))}
         </SelectField>
         <TextField
-          label="Stock mínimo (alerta)"
+          label="Stock mínimo (alerta)" help="Si la existencia baja de aquí, avisa en Notificaciones."
           inputMode="decimal"
           value={minStock}
           onChange={(e) => setMinStock(e.target.value)}
@@ -466,9 +466,9 @@ function MovementModal({
         </p>
         {kind === "restock" && (
           <>
-            <TextField label={`Cantidad comprada (${unit})`} inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} disabled={saving} required />
+            <TextField label={`Cantidad comprada (${unit})`} help="Cuánto entra al inventario con esta compra." inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} disabled={saving} required />
             <TextField
-              label={`Costo de compra por ${unit}`}
+              label={`Costo de compra por ${unit}`} help="Precio por unidad, no el total de la factura."
               inputMode="decimal"
               value={cost}
               onChange={(e) => setCost(e.target.value)}
@@ -476,13 +476,13 @@ function MovementModal({
               disabled={saving}
               required
             />
-            <TextField label="Nota (opcional)" value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} placeholder="Proveedor, factura…" />
+            <TextField label="Nota (opcional)" help="Proveedor, número de factura, etc." value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} placeholder="Proveedor, factura…" />
           </>
         )}
         {kind === "waste" && (
           <>
-            <TextField label={`Cantidad desperdiciada (${unit})`} inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} disabled={saving} required />
-            <TextAreaField label="Motivo" value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} placeholder="Corte mal hecho, impresión defectuosa…" required />
+            <TextField label={`Cantidad desperdiciada (${unit})`} help="Material que se echó a perder. Sale del inventario." inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} disabled={saving} required />
+            <TextAreaField label="Motivo" help="Por qué se hace. Queda en la bitácora." value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} placeholder="Corte mal hecho, impresión defectuosa…" required />
             <p className="text-xs text-ink-muted">
               Es la merma real adicional a la que ya considera la receta. Aparece en el reporte de mermas.
             </p>
@@ -490,14 +490,14 @@ function MovementModal({
         )}
         {kind === "adjust" && (
           <>
-            <TextField label={`Cantidad contada físicamente (${unit})`} inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} disabled={saving} required />
-            <TextAreaField label="Motivo" value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} placeholder="Inventario mensual…" required />
+            <TextField label={`Cantidad contada físicamente (${unit})`} help="Lo que hay de verdad en bodega. El sistema ajusta la diferencia." inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} disabled={saving} required />
+            <TextAreaField label="Motivo" help="Por qué se hace. Queda en la bitácora." value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} placeholder="Inventario mensual…" required />
           </>
         )}
         {kind === "cost" && (
           <>
-            <TextField label={`Costo promedio correcto por ${unit}`} inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} disabled={saving} required />
-            <TextAreaField label="Motivo" value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} required />
+            <TextField label={`Costo promedio correcto por ${unit}`} help="Úselo solo si una compra se capturó con un costo equivocado." inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} disabled={saving} required />
+            <TextAreaField label="Motivo" help="Por qué se hace. Queda en la bitácora." value={reason} onChange={(e) => setReason(e.target.value)} disabled={saving} required />
             <p className="text-xs text-ink-muted">No altera el costo de pedidos que ya entraron a producción.</p>
           </>
         )}
