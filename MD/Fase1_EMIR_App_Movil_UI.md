@@ -308,7 +308,9 @@ export interface PrintflowGateway {
 | Ya entregado | `DELIVERED` | `"0.00"` | Estado no entregable |
 | QR desconocido | — | — | `Código QR no reconocido` |
 
-Agrega en la pantalla del escáner un panel de desarrollo (visible solo con `import.meta.env.DEV`) con un botón por cada fixture. Así puedes navegar a cada estado sin cámara y tu revisión es demostrable.
+Agrega una pantalla de **Modo Demo** en `/demo` con un botón por cada fixture. Así puedes navegar a cada estado sin cámara y la revisión es demostrable.
+
+> ⚠️ **Corregido en Fase 1.5.** Este panel **NO debe ir detrás de `import.meta.env.DEV`**: Vite lo elimina del build de producción y deja el prototipo desplegado sin forma de alcanzar las pantallas de entrega. Debe existir en producción hasta que se conecte la API real. Ver `Fase1.5_EMIR_Correcciones_Prototipo.md`.
 
 ---
 
