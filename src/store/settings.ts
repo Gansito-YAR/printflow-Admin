@@ -15,7 +15,8 @@ interface SettingsState extends BusinessSettings {
 
 const SELECT =
   "deposit_pct::text, timezone, allow_negative_stock, business_name, business_phone, business_email, " +
-  "business_address, business_rfc, remission_footer, default_lead_days, kanban_delivered_days, inactivity_minutes";
+  "business_address, business_rfc, remission_footer, default_lead_days, kanban_delivered_days, inactivity_minutes, " +
+  "landing_whatsapp_e164, business_hours, landing_maps_url, landing_instagram_url, landing_facebook_url, landing_announcement";
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   deposit_pct: "50",
@@ -30,6 +31,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   default_lead_days: 3,
   kanban_delivered_days: 7,
   inactivity_minutes: 30,
+  landing_whatsapp_e164: null,
+  business_hours: null,
+  landing_maps_url: null,
+  landing_instagram_url: null,
+  landing_facebook_url: null,
+  landing_announcement: null,
   loaded: false,
   async load() {
     const { data } = await supabase.from("business_settings").select(SELECT).maybeSingle();

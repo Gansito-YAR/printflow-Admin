@@ -77,6 +77,15 @@ export interface BusinessSettings {
   default_lead_days: number;
   kanban_delivered_days: number;
   inactivity_minutes: number;
+  // Landing administrable (17/10/2026). La pagina publica lee estos campos en
+  // su build. business_name, business_phone, business_email, business_address,
+  // deposit_pct y default_lead_days los comparte con la remision.
+  landing_whatsapp_e164: string | null;
+  business_hours: string | null;
+  landing_maps_url: string | null;
+  landing_instagram_url: string | null;
+  landing_facebook_url: string | null;
+  landing_announcement: string | null;
 }
 
 export interface Customer {
