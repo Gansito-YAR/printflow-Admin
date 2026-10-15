@@ -6,6 +6,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { CheckCircle2, ChevronDown } from "lucide-react";
+import { InfoTip } from "./InfoTip";
 import {
   checkPhone,
   countryOptions,
@@ -29,6 +30,8 @@ export function PhoneField({
   error,
   disabled,
   required,
+  help,
+  emptyHint = "Número de WhatsApp. Puede pegarlo completo con la lada (+52…).",
 }: {
   label: string;
   value: PhoneValue;
@@ -36,6 +39,9 @@ export function PhoneField({
   error?: string | null;
   disabled?: boolean;
   required?: boolean;
+  help?: string;
+  /** Texto bajo el campo cuando aún no hay número. */
+  emptyHint?: string;
 }) {
   const id = useId();
   const statusId = `${id}-status`;
@@ -65,10 +71,13 @@ export function PhoneField({
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-semibold text-ink-strong">
-        {label}
-        {required && <span aria-hidden className="text-brand-accent"> *</span>}
-      </label>
+      <span className="flex items-center gap-1">
+        <label htmlFor={id} className="text-sm font-semibold text-ink-strong">
+          {label}
+          {required && <span aria-hidden className="text-brand-accent"> *</span>}
+        </label>
+        {help && <InfoTip text={help} label={label} />}
+      </span>
       <div className="flex gap-2">
         {/* Selector nativo (accesible y cómodo en celular) con vista compacta encima. */}
         <div
@@ -136,7 +145,7 @@ export function PhoneField({
           <span className="text-warning-ink">{liveMessage}</span>
         ) : (
           <span className="text-ink-muted">
-            {liveMessage ?? "Número de WhatsApp. Puede pegarlo completo con la lada (+52…)."}
+            {liveMessage ?? emptyHint}
           </span>
         )}
       </p>

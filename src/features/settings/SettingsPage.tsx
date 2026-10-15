@@ -10,6 +10,8 @@ import { useThemeStore, type ThemePreference } from "../../store/theme";
 import { parseQuantity } from "../../utils/quantity";
 import { Button, SelectField, Spinner, TextAreaField, TextField } from "../../components/ui";
 import { InfoTip } from "../../components/InfoTip";
+import { PhoneField, type PhoneValue } from "../../components/PhoneField";
+import { checkPhone, phoneMessage, splitStored } from "../../utils/phone";
 
 const TIMEZONES = ["America/Mexico_City", "America/Monterrey", "America/Mazatlan", "America/Hermosillo", "America/Tijuana", "America/Cancun"];
 const TZ_LABEL: Record<string, string> = {
@@ -65,7 +67,8 @@ function SettingsForm() {
   const [leadDays, setLeadDays] = useState(String(settings.default_lead_days));
   const [deliveredDays, setDeliveredDays] = useState(String(settings.kanban_delivered_days));
   const [inactivity, setInactivity] = useState(String(settings.inactivity_minutes));
-  const [waNumber, setWaNumber] = useState(settings.landing_whatsapp_e164 ?? "");
+  const [waPhone, setWaPhone] = useState<PhoneValue>(() => splitStored(settings.landing_whatsapp_e164 ?? ""));
+  const [waError, setWaError] = useState<string | null>(null);
   const [hours, setHours] = useState(settings.business_hours ?? "");
   const [maps, setMaps] = useState(settings.landing_maps_url ?? "");
   const [instagram, setInstagram] = useState(settings.landing_instagram_url ?? "");
@@ -88,8 +91,14 @@ function SettingsForm() {
     if (!Number.isInteger(shown) || shown < 1 || shown > 90) return setError("Días de entregados en el tablero: de 1 a 90.");
     if (rfc.trim() && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/i.test(rfc.trim())) return setError("El RFC no tiene un formato válido (12 o 13 caracteres).");
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError("El correo del negocio no es válido.");
-    if (waNumber && !/^[0-9]{10,15}$/.test(waNumber))
-      return setError("El WhatsApp de la página debe llevar entre 10 y 15 dígitos, con la clave del país. Ej.: 5219991389419.");
+    // Vacío = el sitio se publica sin botones de WhatsApp.
+    const waCheck = checkPhone(waPhone.national, waPhone.country);
+    if (waPhone.national && !waCheck.ok) {
+      const msg = phoneMessage(waCheck) ?? "Número no válido.";
+      setWaError(msg);
+      return setError(`WhatsApp del sitio web: ${msg}`);
+    }
+    setWaError(null);
     for (const [etiqueta, valor] of [["del mapa", maps], ["de Instagram", instagram], ["de Facebook", facebook]] as const) {
       if (valor.trim() && !HTTPS.test(valor.trim())) return setError(`El enlace ${etiqueta} debe empezar con https://.`);
     }
@@ -111,7 +120,7 @@ function SettingsForm() {
         default_lead_days: lead,
         kanban_delivered_days: shown,
         inactivity_minutes: Number(inactivity),
-        landing_whatsapp_e164: blank(waNumber),
+        landing_whatsapp_e164: waCheck.ok ? waCheck.e164 : null,
         business_hours: blank(hours),
         landing_maps_url: blank(maps),
         landing_instagram_url: blank(instagram),
@@ -154,10 +163,10 @@ function SettingsForm() {
 
       <Section icon={Globe} title="Página pública" help="Lo que ven sus clientes en el sitio web. Los cambios aparecen la próxima vez que el sitio se publica.">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextField label="WhatsApp del sitio web" inputMode="numeric" value={waNumber}
-            onChange={(e) => setWaNumber(e.target.value.replace(/[^0-9]/g, ""))} maxLength={15} disabled={saving}
-            hint={waNumber ? `wa.me/${waNumber}` : undefined}
-            help="Número al que escriben desde el sitio. Va con la clave del país y sin espacios ni signos: para México, 52 y luego los 10 dígitos. Si lo deja vacío, el sitio se publica sin botones de WhatsApp." />
+          <PhoneField label="WhatsApp del sitio web" value={waPhone} disabled={saving} error={waError}
+            onChange={(v) => { setWaPhone(v); setWaError(null); }}
+            emptyHint="Vacío: el sitio se publica sin botones de WhatsApp."
+            help="Número al que le escriben desde el sitio. Elija el país en la lada y escriba el número sin la lada. También puede pegarlo completo (+52…) y se separa solo." />
           <TextField label="Horario de atención" value={hours} onChange={(e) => setHours(e.target.value)} maxLength={200} disabled={saving}
             help="Como quiere que se lea en el sitio. Ej.: «Lunes a viernes de 9 a 18, sábados de 9 a 14»." />
         </div>
