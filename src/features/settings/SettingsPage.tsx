@@ -3,7 +3,7 @@
 
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import toast from "react-hot-toast";
-import { Building2, ClipboardList, LayoutDashboard, Package, Palette, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Building2, ClipboardList, Globe, LayoutDashboard, Package, Palette, ShieldCheck, type LucideIcon } from "lucide-react";
 import { toAppError } from "../../lib/errors";
 import { useSettingsStore } from "../../store/settings";
 import { useThemeStore, type ThemePreference } from "../../store/theme";
@@ -38,6 +38,10 @@ function Section({ icon: Icon, title, help, children }: { icon: LucideIcon; titl
 
 const blank = (v: string) => (v.trim() ? v.trim() : null);
 
+/** La base exige https:// en los enlaces de la landing: se renderizan como href
+    en una pagina publica y el check cierra la puerta a javascript: y data:. */
+const HTTPS = /^https:[/][/]/;
+
 export function SettingsPage() {
   const loaded = useSettingsStore((s) => s.loaded);
   if (!loaded) return <Spinner label="Cargando configuración…" />;
@@ -61,6 +65,12 @@ function SettingsForm() {
   const [leadDays, setLeadDays] = useState(String(settings.default_lead_days));
   const [deliveredDays, setDeliveredDays] = useState(String(settings.kanban_delivered_days));
   const [inactivity, setInactivity] = useState(String(settings.inactivity_minutes));
+  const [waNumber, setWaNumber] = useState(settings.landing_whatsapp_e164 ?? "");
+  const [hours, setHours] = useState(settings.business_hours ?? "");
+  const [maps, setMaps] = useState(settings.landing_maps_url ?? "");
+  const [instagram, setInstagram] = useState(settings.landing_instagram_url ?? "");
+  const [facebook, setFacebook] = useState(settings.landing_facebook_url ?? "");
+  const [announcement, setAnnouncement] = useState(settings.landing_announcement ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const inFlight = useRef(false);
@@ -78,6 +88,11 @@ function SettingsForm() {
     if (!Number.isInteger(shown) || shown < 1 || shown > 90) return setError("Días de entregados en el tablero: de 1 a 90.");
     if (rfc.trim() && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/i.test(rfc.trim())) return setError("El RFC no tiene un formato válido (12 o 13 caracteres).");
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError("El correo del negocio no es válido.");
+    if (waNumber && !/^[0-9]{10,15}$/.test(waNumber))
+      return setError("El WhatsApp de la página debe llevar entre 10 y 15 dígitos, con la clave del país. Ej.: 5219991389419.");
+    for (const [etiqueta, valor] of [["del mapa", maps], ["de Instagram", instagram], ["de Facebook", facebook]] as const) {
+      if (valor.trim() && !HTTPS.test(valor.trim())) return setError(`El enlace ${etiqueta} debe empezar con https://.`);
+    }
 
     inFlight.current = true;
     setSaving(true);
@@ -96,6 +111,12 @@ function SettingsForm() {
         default_lead_days: lead,
         kanban_delivered_days: shown,
         inactivity_minutes: Number(inactivity),
+        landing_whatsapp_e164: blank(waNumber),
+        business_hours: blank(hours),
+        landing_maps_url: blank(maps),
+        landing_instagram_url: blank(instagram),
+        landing_facebook_url: blank(facebook),
+        landing_announcement: blank(announcement),
       });
       toast.success("Configuración guardada.");
     } catch (err) {
@@ -129,6 +150,31 @@ function SettingsForm() {
         <TextAreaField label="Leyenda al pie de la remisión" value={footer} onChange={(e) => setFooter(e.target.value)} maxLength={400} disabled={saving}
           hint={`${footer.length}/400`}
           help="Condiciones que verá el cliente. Ej.: «Trabajos no recogidos en 30 días no se garantizan»." />
+      </Section>
+
+      <Section icon={Globe} title="Página pública" help="Lo que ven sus clientes en el sitio web. Los cambios aparecen la próxima vez que el sitio se publica.">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField label="WhatsApp del sitio web" inputMode="numeric" value={waNumber}
+            onChange={(e) => setWaNumber(e.target.value.replace(/[^0-9]/g, ""))} maxLength={15} disabled={saving}
+            hint={waNumber ? `wa.me/${waNumber}` : undefined}
+            help="Número al que escriben desde el sitio. Va con la clave del país y sin espacios ni signos: para México, 52 y luego los 10 dígitos. Si lo deja vacío, el sitio se publica sin botones de WhatsApp." />
+          <TextField label="Horario de atención" value={hours} onChange={(e) => setHours(e.target.value)} maxLength={200} disabled={saving}
+            help="Como quiere que se lea en el sitio. Ej.: «Lunes a viernes de 9 a 18, sábados de 9 a 14»." />
+        </div>
+
+        <TextField label="Enlace al mapa" inputMode="url" value={maps} onChange={(e) => setMaps(e.target.value)} maxLength={500} disabled={saving}
+          help="Opcional. Pegue la dirección del taller en Google Maps. Debe empezar con https://." />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField label="Instagram" inputMode="url" value={instagram} onChange={(e) => setInstagram(e.target.value)} maxLength={300} disabled={saving}
+            help="Opcional. Dirección completa del perfil." />
+          <TextField label="Facebook" inputMode="url" value={facebook} onChange={(e) => setFacebook(e.target.value)} maxLength={300} disabled={saving}
+            help="Opcional. Dirección completa de la página." />
+        </div>
+
+        <TextAreaField label="Aviso en el sitio" value={announcement} onChange={(e) => setAnnouncement(e.target.value)} maxLength={160} disabled={saving}
+          hint={`${announcement.length}/160`}
+          help="Opcional. Se muestra arriba de todo. Ej.: «Cerramos del 24 al 2 de enero». Déjelo vacío y la barra no aparece." />
       </Section>
 
       <Section icon={ClipboardList} title="Pedidos y cobros" help="Reglas que la base de datos aplica a todos los pedidos.">
