@@ -402,10 +402,20 @@ export interface InventoryTx {
   author: { full_name: string } | null;
 }
 
+/** Prioridad de un insumo en la receta (migración 0023). */
+export type RecipePriority = "REQUIRED" | "OPTIONAL";
+
+export const RECIPE_PRIORITY_LABEL: Record<RecipePriority, string> = {
+  REQUIRED: "Obligatorio",
+  OPTIONAL: "Opcional",
+};
+
 export interface RecipeLineInput {
   raw_material_id: string;
-  quantity_required: string;
-  waste_margin_pct: string;
+  priority: RecipePriority;
+  /** Opcionales: se calcularán con las medidas; solo se reenvían si ya existían. */
+  quantity_required?: string;
+  waste_margin_pct?: string;
 }
 
 export interface ProductSimulation {
@@ -413,12 +423,16 @@ export interface ProductSimulation {
     raw_material_id: string;
     name: string;
     unit: MaterialUnit;
-    quantity_required: string;
+    priority?: RecipePriority;
+    quantity_required: string | null;
     waste_margin_pct: string;
     unit_cost: string;
-    cost: string;
+    cost: string | null;
   }[];
+  /** true solo si hay cantidades para calcular el costo. */
   has_recipe: boolean;
+  /** Insumos en la receta, tengan o no cantidad. */
+  material_count?: number;
   material_cost: string;
   fixed_cost: string;
   unit_cost: string;
