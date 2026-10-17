@@ -8,7 +8,7 @@ import { fetchCategories, fetchProducts } from "../../lib/queries";
 import { rpc } from "../../lib/rpc";
 import { toAppError } from "../../lib/errors";
 import type { Product, ProductCategory, PricingUnit } from "../../lib/types";
-import { UNIT_LABEL } from "../../lib/types";
+import { UNIT_LABEL, productUnitLabel, perUnitText } from "../../lib/types";
 import { formatMoney, isGreater, parseAmountInput } from "../../utils/money";
 import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextField } from "../../components/ui";
 import { DataList } from "../../components/DataList";
@@ -146,7 +146,7 @@ export function ProductsPage() {
               ),
             },
             { key: "cat", header: "Categoría", hideOnTablet: true, render: (p) => p.category?.name ?? "—" },
-            { key: "unit", header: "Unidad", render: (p) => UNIT_LABEL[p.pricing_unit] },
+            { key: "unit", header: "Unidad", render: (p) => productUnitLabel(p) },
             { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.retail_price)}</span> },
             { key: "wholesale", header: "Mayoreo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.wholesale_price)}</span> },
             { key: "min", header: "Mín. mayoreo", align: "right", hideOnTablet: true, render: (p) => <span className="tabular">{p.wholesale_min_qty ?? "—"}</span> },
@@ -244,6 +244,7 @@ function ProductForm({
   const [retail, setRetail] = useState(product?.retail_price ?? "");
   const [wholesale, setWholesale] = useState(product?.wholesale_price ?? "");
   const [minQty, setMinQty] = useState(product?.wholesale_min_qty ?? "");
+  const [perPackage, setPerPackage] = useState(product?.units_per_package ? String(product.units_per_package) : "");
   const [fixedCost, setFixedCost] = useState(product?.fixed_cost ?? "0");
   const [active, setActive] = useState(product?.is_active ?? true);
   const [error, setError] = useState<string | null>(null);
@@ -264,6 +265,14 @@ function ProductForm({
     if (m && !m.ok) return setError(`Mínimo de mayoreo: ${m.error}`);
     const fc = parseQuantity(fixedCost || "0", { allowZero: true, label: "El costo fijo" });
     if (!fc.ok) return setError(fc.error);
+    // Paquete: cuántas piezas trae (entero de 1 a 1,000,000). Las demás unidades no lo llevan.
+    let unitsPerPackage: number | null = null;
+    if (unit === "PACKAGE") {
+      const n = Number(perPackage.trim());
+      if (!/^\d+$/.test(perPackage.trim()) || n < 1 || n > 1_000_000)
+        return setError("Cantidad por paquete: escriba un número entero de piezas, por ejemplo 100.");
+      unitsPerPackage = n;
+    }
 
     inFlight.current = true;
     setSaving(true);
@@ -277,6 +286,7 @@ function ProductForm({
       retail_price: r.value,
       wholesale_price: w.value,
       wholesale_min_qty: m && m.ok ? m.value : null,
+      units_per_package: unitsPerPackage,
       fixed_cost: fc.value,
       is_active: active,
     };
@@ -359,7 +369,7 @@ function ProductForm({
           )}
         </div>
         <SelectField
-          label="Unidad de cobro" help="Por pieza o por m². No se cambia después de crear el producto."
+          label="Unidad de cobro" help="Por pieza, por m² o por paquete. No se cambia después de crear el producto."
           value={unit}
           onChange={(e) => setUnit(e.target.value as PricingUnit)}
           disabled={saving || Boolean(product)}
@@ -370,10 +380,23 @@ function ProductForm({
             </option>
           ))}
         </SelectField>
-        <TextField label="Precio menudeo" help="Precio normal por pieza o m²." inputMode="decimal" value={retail} onChange={(e) => setRetail(e.target.value)} disabled={saving} required />
-        <TextField label="Precio mayoreo" help="Precio para clientes de mayoreo o compras grandes." inputMode="decimal" value={wholesale} onChange={(e) => setWholesale(e.target.value)} disabled={saving} required />
+        {unit === "PACKAGE" && (
+          <TextField
+            label="Cantidad por paquete"
+            help="Cuántas piezas trae cada paquete. Ej.: 100 para un paquete de 100 tarjetas. El precio, la receta y el costo fijo se capturan por paquete."
+            inputMode="numeric"
+            value={perPackage}
+            onChange={(e) => setPerPackage(e.target.value.replace(/[^0-9]/g, ""))}
+            hint="Piezas por paquete. Para otro tamaño de paquete, registre otro producto."
+            maxLength={7}
+            disabled={saving}
+            required
+          />
+        )}
+        <TextField label="Precio menudeo" help={`Precio normal ${perUnitText(unit)}.`} inputMode="decimal" value={retail} onChange={(e) => setRetail(e.target.value)} disabled={saving} required />
+        <TextField label="Precio mayoreo" help={`Precio ${perUnitText(unit)} para clientes de mayoreo o compras grandes.`} inputMode="decimal" value={wholesale} onChange={(e) => setWholesale(e.target.value)} disabled={saving} required />
         <TextField
-          label="Cantidad mínima para mayoreo" help="Desde esta cantidad, un cliente de menudeo paga precio de mayoreo."
+          label="Cantidad mínima para mayoreo" help={unit === "PACKAGE" ? "Desde esta cantidad de paquetes, un cliente de menudeo paga precio de mayoreo." : "Desde esta cantidad, un cliente de menudeo paga precio de mayoreo."}
           inputMode="decimal"
           value={minQty}
           onChange={(e) => setMinQty(e.target.value)}
@@ -381,7 +404,7 @@ function ProductForm({
           disabled={saving}
         />
         <TextField
-          label={`Costo fijo por ${unit === "M2" ? "m²" : "pieza"}`} help="Mano de obra, energía y máquina por unidad. Solo para calcular la utilidad."
+          label={`Costo fijo ${perUnitText(unit)}`} help="Mano de obra, energía y máquina por unidad. Solo para calcular la utilidad."
           inputMode="decimal"
           value={fixedCost}
           onChange={(e) => setFixedCost(e.target.value)}

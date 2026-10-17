@@ -15,7 +15,7 @@ export type OrderStatus =
 
 export type PaymentMethod = "CASH" | "TRANSFER" | "CARD";
 export type PricingTier = "RETAIL" | "WHOLESALE";
-export type PricingUnit = "UNIT" | "M2";
+export type PricingUnit = "UNIT" | "M2" | "PACKAGE";
 /** Categoría administrable (Plan Correcciones v2, C5). Se desactiva, no se borra. */
 export interface ProductCategory {
   id: string;
@@ -108,6 +108,8 @@ export interface Product {
   retail_price: Money;
   wholesale_price: Money;
   wholesale_min_qty: string | null;
+  /** Piezas por paquete. Solo en productos con unidad PACKAGE; null en los demás. */
+  units_per_package?: number | null;
   is_active: boolean;
   /** C_fijo por unidad facturable (Módulo 4). */
   fixed_cost: string;
@@ -143,12 +145,13 @@ export interface OrderItem {
   line_total: Money;
 }
 
-/** "6 m²" o "6 m² (2 piezas)" para M2; "3 piezas" para UNIT. */
+/** "6 m²" o "6 m² (2 piezas)" para M2; "3 piezas" para UNIT; "3 paquetes" para PACKAGE. */
 export function itemQuantityLabel(it: Pick<OrderItem, "pricing_unit" | "quantity" | "billable_qty">): string {
   const trim = (v: string) => (v.includes(".") ? v.replace(/\.?0+$/, "") : v);
   const pieces = trim(it.quantity);
   const piecesLabel = `${pieces} ${pieces === "1" ? "pieza" : "piezas"}`;
   if (it.pricing_unit === "M2") return pieces === "1" ? `${trim(it.billable_qty)} m²` : `${trim(it.billable_qty)} m² (${piecesLabel})`;
+  if (it.pricing_unit === "PACKAGE") return `${pieces} ${pieces === "1" ? "paquete" : "paquetes"}`;
   return piecesLabel;
 }
 
@@ -319,7 +322,19 @@ export const TIER_LABEL: Record<PricingTier, string> = {
 export const UNIT_LABEL: Record<PricingUnit, string> = {
   UNIT: "Pieza",
   M2: "m²",
+  PACKAGE: "Paquete",
 };
+
+/** "Paquete (100 pzas)" para PACKAGE; la etiqueta normal para las demás. */
+export function productUnitLabel(p: Pick<Product, "pricing_unit" | "units_per_package">): string {
+  if (p.pricing_unit === "PACKAGE" && p.units_per_package) return `Paquete (${p.units_per_package} pzas)`;
+  return UNIT_LABEL[p.pricing_unit];
+}
+
+/** "por pieza", "por m²" o "por paquete": para textos de precio, costo y receta. */
+export function perUnitText(unit: PricingUnit): string {
+  return unit === "M2" ? "por m²" : unit === "PACKAGE" ? "por paquete" : "por pieza";
+}
 
 export const EVENT_LABEL: Record<OrderEventType, string> = {
   CREATED: "Pedido creado",

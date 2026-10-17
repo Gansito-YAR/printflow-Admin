@@ -57,6 +57,7 @@ const FIELD_LABEL: Record<string, string> = {
   retail_price: "Precio menudeo",
   wholesale_price: "Precio mayoreo",
   wholesale_min_qty: "Mínimo de mayoreo",
+  units_per_package: "Cantidad por paquete",
   fixed_cost: "Costo fijo",
   unit: "Unidad",
   min_stock: "Stock mínimo",

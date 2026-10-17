@@ -35,7 +35,7 @@ const ORDER_DETAIL_SELECT =
 
 const PRODUCT_SELECT =
   "id, sku, name, category_id, category:product_categories(id, name, sort_order), pricing_unit, retail_price::text, wholesale_price::text, " +
-  "wholesale_min_qty::text, is_active, fixed_cost::text, archived_at";
+  "wholesale_min_qty::text, units_per_package, is_active, fixed_cost::text, archived_at";
 
 const CUSTOMER_SELECT = "id, phone_number, full_name, pricing_tier, is_active, notes, created_at";
 

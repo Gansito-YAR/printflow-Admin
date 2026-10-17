@@ -30,7 +30,7 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const inFlight = useRef(false);
-  const per = product.pricing_unit === "M2" ? "por m² vendido" : "por pieza vendida";
+  const per = product.pricing_unit === "M2" ? "por m² vendido" : product.pricing_unit === "PACKAGE" ? "por paquete vendido" : "por pieza vendida";
 
   const loadSim = useCallback(async () => {
     const s = await rpc.simulateProductCost(product.id);

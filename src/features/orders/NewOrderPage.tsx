@@ -12,7 +12,7 @@ import { fetchProducts } from "../../lib/queries";
 import { groupByCategory } from "../../utils/categories";
 import { toAppError } from "../../lib/errors";
 import type { Customer, Product, Quote, QuoteItemInput } from "../../lib/types";
-import { TIER_LABEL, UNIT_LABEL } from "../../lib/types";
+import { TIER_LABEL, UNIT_LABEL, productUnitLabel } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
 import { fromDateTimeLocal, toDateTimeLocal } from "../../utils/dates";
@@ -206,7 +206,7 @@ export function NewOrderPage() {
                       <optgroup key={cat} label={cat}>
                         {list.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name} ({UNIT_LABEL[p.pricing_unit]})
+                            {p.name} ({productUnitLabel(p)})
                           </option>
                         ))}
                       </optgroup>
