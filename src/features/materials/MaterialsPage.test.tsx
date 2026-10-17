@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
 const restock = vi.fn();
+const upsert = vi.fn();
 const material = {
   id: "m1", sku: "M-LONA", name: "Lona 13 oz", unit: "M2", unit_cost: "12.0000",
   current_stock: "20.0000", min_stock: "25", is_active: true,
@@ -11,12 +12,20 @@ vi.mock("../../lib/queries", () => ({
   fetchMaterials: async () => [material],
   fetchKardex: async () => [],
 }));
-vi.mock("../../lib/rpc", () => ({ rpc: { restockMaterial: (...a: unknown[]) => restock(...a) } }));
+vi.mock("../../lib/rpc", () => ({
+  rpc: {
+    restockMaterial: (...a: unknown[]) => restock(...a),
+    upsertMaterial: (...a: unknown[]) => upsert(...a),
+  },
+}));
 vi.mock("react-hot-toast", () => ({ default: { success: vi.fn(), error: vi.fn() } }));
 
 import { MaterialsPage } from "./MaterialsPage";
 
-beforeEach(() => restock.mockReset());
+beforeEach(() => {
+  restock.mockReset();
+  upsert.mockReset();
+});
 
 it("marca el stock bajo el mínimo", async () => {
   render(<MaterialsPage />);
@@ -40,4 +49,32 @@ it("reabasto: doble envío = una llamada; reintento tras red usa la misma clave"
   await waitFor(() => expect(restock).toHaveBeenCalledTimes(2));
   expect(restock.mock.calls[0]![3]).toBe(restock.mock.calls[1]![3]);
   expect(restock.mock.calls[0]!.slice(0, 3)).toEqual(["m1", "10", "14"]);
+});
+
+it("insumo nuevo por pieza: pide base y altura en cm y las envía", async () => {
+  const user = userEvent.setup();
+  upsert.mockResolvedValue({ ...material, id: "m2", unit: "UNIT" });
+  render(<MaterialsPage />);
+  await user.click(await screen.findByRole("button", { name: "+ Insumo" }));
+  const form = screen.getByTestId("material-form");
+  const unidad = screen.getByLabelText(/^Unidad/);
+
+  fireEvent.change(unidad, { target: { value: "M2" } });
+  expect(screen.queryByTestId("material-width")).toBeNull(); // m²: sin medidas
+
+  fireEvent.change(unidad, { target: { value: "UNIT" } });
+  expect(screen.getByTestId("material-width")).toBeTruthy();
+  expect(screen.getByTestId("material-height")).toBeTruthy();
+
+  fireEvent.change(screen.getByLabelText(/^SKU/), { target: { value: "M-PLIEGO" } });
+  fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: "Couché 300 g" } });
+  fireEvent.submit(form);
+  expect(await screen.findByText(/La base es obligatoria/)).toBeTruthy();
+  expect(upsert).not.toHaveBeenCalled();
+
+  fireEvent.change(screen.getByTestId("material-width"), { target: { value: "70" } });
+  fireEvent.change(screen.getByTestId("material-height"), { target: { value: "100" } });
+  fireEvent.submit(form);
+  await waitFor(() => expect(upsert).toHaveBeenCalledTimes(1));
+  expect(upsert.mock.calls[0]![0]).toMatchObject({ unit: "UNIT", width_cm: "70", height_cm: "100" });
 });

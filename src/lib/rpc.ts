@@ -146,6 +146,8 @@ export const rpc = {
     unit: MaterialUnit;
     min_stock: string | null;
     is_active: boolean;
+    width_cm?: string | null;
+    height_cm?: string | null;
   }) {
     return call<Material>("upsert_material", {
       p_id: m.id ?? null,
@@ -154,6 +156,8 @@ export const rpc = {
       p_unit: m.unit,
       p_min_stock: m.min_stock,
       p_is_active: m.is_active,
+      p_width_cm: m.width_cm ?? null,
+      p_height_cm: m.height_cm ?? null,
     });
   },
   restockMaterial(id: string, qty: string, unitCost: string, key: string, note?: string) {

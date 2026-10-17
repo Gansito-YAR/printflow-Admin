@@ -169,7 +169,7 @@ export async function fetchOrderHistory(f: OrderHistoryFilter): Promise<{ rows: 
 // ----- Módulo 4 --------------------------------------------------------------
 
 const MATERIAL_SELECT =
-  "id, sku, name, unit, unit_cost::text, current_stock::text, min_stock::text, is_active, archived_at";
+  "id, sku, name, unit, unit_cost::text, current_stock::text, min_stock::text, is_active, archived_at, width_cm::text, height_cm::text";
 
 export async function fetchMaterials(onlyActive = false): Promise<Material[]> {
   // Los eliminados nunca se listan (siguen existiendo solo para el historial).

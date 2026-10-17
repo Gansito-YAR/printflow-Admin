@@ -61,6 +61,8 @@ const FIELD_LABEL: Record<string, string> = {
   fixed_cost: "Costo fijo",
   unit: "Unidad",
   min_stock: "Stock mínimo",
+  width_cm: "Base (cm)",
+  height_cm: "Altura (cm)",
   deposit_pct: "Anticipo mínimo (%)",
   timezone: "Zona horaria",
   allow_negative_stock: "Permitir stock negativo",

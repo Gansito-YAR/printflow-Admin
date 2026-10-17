@@ -383,6 +383,9 @@ export interface Material {
   current_stock: string;
   min_stock: string | null;
   is_active: boolean;
+  /** Base y altura en cm. Solo insumos por pieza (pliego, hoja, lámina…). */
+  width_cm?: string | null;
+  height_cm?: string | null;
   inventory_value?: Money;
   /** Archivado: oculto de listas y selectores; sigue en sus recetas. */
   archived_at?: string | null;

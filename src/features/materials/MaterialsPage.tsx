@@ -149,6 +149,11 @@ export function MaterialsPage() {
                 <>
                   <span className="font-semibold text-ink-strong">{m.name}</span>
                   {!m.is_active && <span className="ml-2 text-xs font-normal text-ink-muted">(inactivo)</span>}
+                  {m.width_cm && m.height_cm && (
+                    <span className="ml-2 text-xs font-normal text-ink-muted tabular">
+                      {formatQty(m.width_cm)} × {formatQty(m.height_cm)} cm
+                    </span>
+                  )}
                   {m.archived_at && <span className="ml-2 text-xs font-normal text-ink-muted">(archivado)</span>}
                 </>
               ),
@@ -297,6 +302,8 @@ function MaterialForm({
   const [name, setName] = useState(material?.name ?? "");
   const [unit, setUnit] = useState<MaterialUnit>(material?.unit ?? "M2");
   const [minStock, setMinStock] = useState(material?.min_stock ?? "");
+  const [widthCm, setWidthCm] = useState(material?.width_cm ?? "");
+  const [heightCm, setHeightCm] = useState(material?.height_cm ?? "");
   const [active, setActive] = useState(material?.is_active ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -308,6 +315,22 @@ function MaterialForm({
     if (!sku.trim() || !name.trim()) return setError("SKU y nombre son obligatorios.");
     const min = minStock.trim() ? parseQuantity(minStock, { allowZero: true, label: "El stock mínimo" }) : null;
     if (min && !min.ok) return setError(min.error);
+    // Pieza: base y altura en cm (obligatorias al crear; al editar una pieza
+    // anterior sin medidas se pueden dejar vacías, pero van las dos o ninguna).
+    let w: string | null = null;
+    let h: string | null = null;
+    if (unit === "UNIT") {
+      const hayAlguna = widthCm.trim() !== "" || heightCm.trim() !== "";
+      if (!material || hayAlguna) {
+        const pw = parseQuantity(widthCm, { decimals: 2, label: "La base" });
+        if (!pw.ok) return setError(pw.error);
+        const ph = parseQuantity(heightCm, { decimals: 2, label: "La altura" });
+        if (!ph.ok) return setError(ph.error);
+        if (Number(pw.value) > 10000 || Number(ph.value) > 10000) return setError("La base y la altura van en cm, hasta 10,000.");
+        w = pw.value;
+        h = ph.value;
+      }
+    }
 
     inFlight.current = true;
     setSaving(true);
@@ -320,6 +343,8 @@ function MaterialForm({
         unit,
         min_stock: min && min.ok ? min.value : null,
         is_active: active,
+        width_cm: w,
+        height_cm: h,
       });
       toast.success("Insumo guardado.");
       onSaved();
@@ -353,6 +378,28 @@ function MaterialForm({
             </option>
           ))}
         </SelectField>
+        {unit === "UNIT" && (
+          <>
+            <TextField
+              label="Base (cm)" help="Ancho de una pieza del insumo, en centímetros. Ej.: 70 para un pliego de 70 × 100 cm."
+              inputMode="decimal"
+              value={widthCm}
+              onChange={(e) => setWidthCm(e.target.value)}
+              disabled={saving}
+              required={!material}
+              data-testid="material-width"
+            />
+            <TextField
+              label="Altura (cm)" help="Alto de una pieza del insumo, en centímetros. Ej.: 100 para un pliego de 70 × 100 cm."
+              inputMode="decimal"
+              value={heightCm}
+              onChange={(e) => setHeightCm(e.target.value)}
+              disabled={saving}
+              required={!material}
+              data-testid="material-height"
+            />
+          </>
+        )}
         <TextField
           label="Stock mínimo (alerta)" help="Si la existencia baja de aquí, avisa en Notificaciones."
           inputMode="decimal"
