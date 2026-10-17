@@ -191,8 +191,12 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
               <div className="grid grid-cols-2 gap-1">
                 <span>Materiales (con merma)</span>
                 <span className="text-right">${sim.material_cost}</span>
-                <span>Costo fijo</span>
-                <span className="text-right">${sim.fixed_cost}</span>
+                {Number(sim.fixed_cost) > 0 && (
+                  <>
+                    <span>Costo fijo</span>
+                    <span className="text-right">${sim.fixed_cost}</span>
+                  </>
+                )}
                 <span className="font-semibold text-ink-strong">Costo de producción</span>
                 <span className="text-right font-semibold text-ink-strong">${sim.unit_cost}</span>
               </div>
@@ -220,7 +224,7 @@ export function RecipeModal({ product, onClose }: { product: Product; onClose: (
               </div>
               {!sim.has_recipe && (
                 <p className="mt-2 text-xs font-semibold text-warning-ink">
-                  Sin receta: el costo solo incluye el costo fijo y los reportes lo marcarán como incompleto.
+                  Sin receta: no hay costo de materiales y los reportes marcarán este producto como incompleto.
                 </p>
               )}
             </section>

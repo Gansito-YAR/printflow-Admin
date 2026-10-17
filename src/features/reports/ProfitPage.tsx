@@ -168,7 +168,7 @@ export function ProfitPage() {
           <div className="grid grid-cols-1 gap-3 tabular md:grid-cols-3" data-testid="business-totals">
             <div className="rounded-md border border-line bg-surface-0 p-4">
               <p className="flex items-center gap-1 text-xs text-ink-muted">
-                Utilidad de los pedidos <InfoTip text="Venta menos materiales, costo fijo y gastos extra de cada pedido." />
+                Utilidad de los pedidos <InfoTip text="Venta menos materiales y gastos extra de cada pedido. La mano de obra, la luz y la renta se restan en Gastos del negocio." />
               </p>
               <p className="text-xl font-bold text-ink-strong">{formatMoney(report.totals.profit)}</p>
             </div>

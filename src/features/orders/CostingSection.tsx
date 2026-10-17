@@ -97,10 +97,12 @@ export function CostingSection({ orderId, timezone }: { orderId: string; timezon
                         </p>
                       ))}
                       {!l.has_recipe && <p className="text-xs font-semibold text-warning-ink">Sin receta</p>}
-                      <p className="flex justify-between text-xs text-ink-base">
-                        <span>Costo fijo</span>
-                        <span>{formatMoney(l.fixed_cost)}</span>
-                      </p>
+                      {Number(l.fixed_cost) > 0 && (
+                        <p className="flex justify-between text-xs text-ink-base">
+                          <span>Costo fijo</span>
+                          <span>{formatMoney(l.fixed_cost)}</span>
+                        </p>
+                      )}
                       <p className="mt-1 flex justify-between border-t border-line pt-1 text-xs font-semibold">
                         <span>Costo de producción · venta {formatMoney(l.sale)}</span>
                         <span>{formatMoney(l.production_cost)}</span>

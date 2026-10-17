@@ -12,7 +12,6 @@ import { UNIT_LABEL, productUnitLabel, perUnitText } from "../../lib/types";
 import { formatMoney, isGreater, parseAmountInput } from "../../utils/money";
 import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextField } from "../../components/ui";
 import { DataList } from "../../components/DataList";
-import { parseQuantity } from "../../utils/quantity";
 import { RecipeModal } from "./RecipeModal";
 import { CategoriesModal, createCategory } from "./CategoriesModal";
 
@@ -245,7 +244,6 @@ function ProductForm({
   const [wholesale, setWholesale] = useState(product?.wholesale_price ?? "");
   const [minQty, setMinQty] = useState(product?.wholesale_min_qty ?? "");
   const [perPackage, setPerPackage] = useState(product?.units_per_package ? String(product.units_per_package) : "");
-  const [fixedCost, setFixedCost] = useState(product?.fixed_cost ?? "0");
   const [active, setActive] = useState(product?.is_active ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -263,8 +261,6 @@ function ProductForm({
     if (!w.ok) return setError(`Mayoreo: ${w.error}`);
     if (isGreater(w.value, r.value)) return setError("El precio de mayoreo no puede ser mayor al de menudeo.");
     if (m && !m.ok) return setError(`Mínimo de mayoreo: ${m.error}`);
-    const fc = parseQuantity(fixedCost || "0", { allowZero: true, label: "El costo fijo" });
-    if (!fc.ok) return setError(fc.error);
     // Paquete: cuántas piezas trae (entero de 1 a 1,000,000). Las demás unidades no lo llevan.
     let unitsPerPackage: number | null = null;
     if (unit === "PACKAGE") {
@@ -287,7 +283,6 @@ function ProductForm({
       wholesale_price: w.value,
       wholesale_min_qty: m && m.ok ? m.value : null,
       units_per_package: unitsPerPackage,
-      fixed_cost: fc.value,
       is_active: active,
     };
     const result = product
@@ -383,7 +378,7 @@ function ProductForm({
         {unit === "PACKAGE" && (
           <TextField
             label="Cantidad por paquete"
-            help="Cuántas piezas trae cada paquete. Ej.: 100 para un paquete de 100 tarjetas. El precio, la receta y el costo fijo se capturan por paquete."
+            help="Cuántas piezas trae cada paquete. Ej.: 100 para un paquete de 100 tarjetas. El precio y la receta se capturan por paquete."
             inputMode="numeric"
             value={perPackage}
             onChange={(e) => setPerPackage(e.target.value.replace(/[^0-9]/g, ""))}
@@ -401,14 +396,6 @@ function ProductForm({
           value={minQty}
           onChange={(e) => setMinQty(e.target.value)}
           hint="Vacío = solo clientes de tarifa Mayoreo."
-          disabled={saving}
-        />
-        <TextField
-          label={`Costo fijo ${perUnitText(unit)}`} help="Mano de obra, energía y máquina por unidad. Solo para calcular la utilidad."
-          inputMode="decimal"
-          value={fixedCost}
-          onChange={(e) => setFixedCost(e.target.value)}
-          hint="Mano de obra, energía, desgaste de máquina. Confidencial."
           disabled={saving}
         />
       </div>
