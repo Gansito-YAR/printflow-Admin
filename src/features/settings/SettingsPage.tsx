@@ -44,6 +44,16 @@ const blank = (v: string) => (v.trim() ? v.trim() : null);
     en una pagina publica y el check cierra la puerta a javascript: y data:. */
 const HTTPS = /^https:[/][/]/;
 
+/** La página pública descarta un enlace a la portada de la red (sin perfil):
+ *  "https://www.instagram.com/" abriría Instagram, no el negocio. */
+function esPerfil(url: string): boolean {
+  try {
+    return new URL(url).pathname.replace(/\//g, "") !== "";
+  } catch {
+    return false;
+  }
+}
+
 export function SettingsPage() {
   const loaded = useSettingsStore((s) => s.loaded);
   if (!loaded) return <Spinner label="Cargando configuración…" />;
@@ -101,6 +111,13 @@ function SettingsForm() {
     setWaError(null);
     for (const [etiqueta, valor] of [["del mapa", maps], ["de Instagram", instagram], ["de Facebook", facebook]] as const) {
       if (valor.trim() && !HTTPS.test(valor.trim())) return setError(`El enlace ${etiqueta} debe empezar con https://.`);
+    }
+    for (const [red, valor, ejemplo] of [
+      ["Instagram", instagram, "https://www.instagram.com/imprentaescalante"],
+      ["Facebook", facebook, "https://www.facebook.com/imprentaescalante"],
+    ] as const) {
+      if (valor.trim() && !esPerfil(valor.trim()))
+        return setError(`El enlace de ${red} lleva a la página principal de ${red}, no a su perfil. Pegue el de su perfil, por ejemplo ${ejemplo}.`);
     }
 
     inFlight.current = true;
@@ -176,9 +193,9 @@ function SettingsForm() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextField label="Instagram" inputMode="url" value={instagram} onChange={(e) => setInstagram(e.target.value)} maxLength={300} disabled={saving}
-            help="Opcional. Dirección completa del perfil." />
+            help="Opcional. Abra su perfil de Instagram y copie la dirección completa, por ejemplo https://www.instagram.com/imprentaescalante. La sola dirección de Instagram no se muestra en el sitio." />
           <TextField label="Facebook" inputMode="url" value={facebook} onChange={(e) => setFacebook(e.target.value)} maxLength={300} disabled={saving}
-            help="Opcional. Dirección completa de la página." />
+            help="Opcional. Abra la página de su negocio en Facebook y copie la dirección completa, por ejemplo https://www.facebook.com/imprentaescalante. La sola dirección de Facebook no se muestra en el sitio." />
         </div>
 
         <TextAreaField label="Aviso en el sitio" value={announcement} onChange={(e) => setAnnouncement(e.target.value)} maxLength={160} disabled={saving}
