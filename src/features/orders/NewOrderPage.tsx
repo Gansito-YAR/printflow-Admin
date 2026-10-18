@@ -241,16 +241,9 @@ export function NewOrderPage() {
                     ))}
                   </select>
                 </label>
-                <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
-                  Cantidad
-                  <input
-                    inputMode="decimal"
-                    value={row.quantity}
-                    onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
-                    disabled={submitting}
-                    className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
-                  />
-                </label>
+                {/* Sin campo de cantidad (pedido del cliente, 17/10/2026): cada
+                    partida va con cantidad 1 mientras se define el nuevo cálculo. */}
+                <div className="hidden md:col-span-2 md:block" />
                 {product?.pricing_unit === "M2" ? (
                   <>
                     <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
