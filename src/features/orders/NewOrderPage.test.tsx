@@ -133,8 +133,12 @@ it("calculadora de corte: pide base, altura y cantidad, y muestra pliegos y merm
   await new Promise((r) => setTimeout(r, 450));
   expect(quoteOrder).not.toHaveBeenCalled(); // sin base y altura no cotiza
 
-  fireEvent.change(screen.getByTestId("row-cutW"), { target: { value: "33.02" } });
-  fireEvent.change(screen.getByTestId("row-cutH"), { target: { value: "48.26" } });
+  expect(screen.getByTestId("cut-pending")).toHaveTextContent("Escriba base, altura y cantidad");
+  // Como en la captura del cliente: con "cm" escrito o con coma decimal.
+  fireEvent.change(screen.getByTestId("row-cutW"), { target: { value: "33.02cm" } });
+  fireEvent.change(screen.getByTestId("row-cutH"), { target: { value: "48,26 cm" } });
+  expect(screen.getByTestId("row-cutW")).toHaveValue("33.02");
+  expect(screen.getByTestId("row-cutH")).toHaveValue("48.26");
 
   const preview = await screen.findByTestId("cut-preview");
   expect(preview).toHaveTextContent("3 por pliego");

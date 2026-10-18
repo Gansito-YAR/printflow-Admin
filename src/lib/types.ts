@@ -244,6 +244,9 @@ export interface ProductMaterialOption {
   name: string;
   /** Insumo cortable = por pieza y con base/altura. */
   cuttable: boolean;
+  /** Medidas del pliego (cm), si es cortable. */
+  sheet_w?: number | null;
+  sheet_h?: number | null;
 }
 
 export interface QuoteLine {

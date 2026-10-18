@@ -2,7 +2,7 @@
 // MD/Plan_Calculadora_Corte.md). Los números los calcula la base
 // (plan_cuts); aquí solo se muestran y se dibuja el acomodo de un pliego.
 
-import type { CutPlanMaterial } from "../../lib/types";
+import type { CutPlanMaterial, ProductMaterialOption } from "../../lib/types";
 import { formatMoney } from "../../utils/money";
 import { formatQty } from "../../utils/quantity";
 
@@ -14,7 +14,7 @@ function SheetDrawing({ m }: { m: CutPlanMaterial }) {
   return (
     <svg
       viewBox={`0 0 ${sw} ${sh}`}
-      className="h-auto w-full max-w-[220px] rounded-sm border border-line bg-surface-2"
+      className="h-auto w-full max-w-[320px] shrink-0 rounded-sm border border-line bg-surface-2 sm:w-[320px]"
       role="img"
       aria-label={`Acomodo en un pliego de ${formatQty(m.sheet_w)} × ${formatQty(m.sheet_h)} cm: ${m.pieces_per_sheet} piezas`}
       preserveAspectRatio="xMidYMid meet"
@@ -44,6 +44,27 @@ function SheetDrawing({ m }: { m: CutPlanMaterial }) {
         />
       ))}
     </svg>
+  );
+}
+
+/** Antes de tener las medidas: el pliego vacío de cada material y qué falta escribir. */
+export function CutPending({ materials }: { materials: ProductMaterialOption[] }) {
+  if (materials.length === 0) return null;
+  return (
+    <div className="order-5 col-span-6 flex flex-wrap gap-3 md:order-none md:col-span-12" data-testid="cut-pending">
+      {materials.map((o) => (
+        <div key={o.raw_material_id} className="flex items-center gap-3 rounded-md bg-surface-1 p-3 text-sm">
+          <svg viewBox={`0 0 ${o.sheet_w ?? 1} ${o.sheet_h ?? 1}`} className="h-16 w-auto rounded-sm border border-dashed border-line-strong bg-surface-2" aria-hidden="true" />
+          <span className="flex flex-col">
+            <span className="font-semibold text-ink-strong">{o.name}</span>
+            <span className="tabular text-xs text-ink-muted">
+              Pliego de {formatQty(String(o.sheet_w ?? ""))} × {formatQty(String(o.sheet_h ?? ""))} cm
+            </span>
+            <span className="text-xs text-ink-muted">Escriba base, altura y cantidad para ver el acomodo.</span>
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

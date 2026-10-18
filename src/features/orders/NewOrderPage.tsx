@@ -21,7 +21,14 @@ import { CustomerPicker } from "./CustomerPicker";
 import { StickyActions } from "../../components/StickyActions";
 import { EstimatePanel } from "./CostingSection";
 import { MaterialsNotice } from "./MaterialsNotice";
-import { CutPreview } from "./CutPreview";
+import { CutPending, CutPreview } from "./CutPreview";
+
+/** Deja solo el número: "10cm" → "10", "10,5 cm" → "10.5". El "cm" va fijo en el campo. */
+function onlyNumber(raw: string): string {
+  const s = raw.replace(",", ".").replace(/[^0-9.]/g, "");
+  const [int = "", ...dec] = s.split(".");
+  return dec.length ? `${int}.${dec.join("").slice(0, 2)}` : int;
+}
 
 interface Row {
   key: string;
@@ -427,25 +434,38 @@ export function NewOrderPage() {
                     ).map(([field, label, required]) => (
                       <label key={field} className="flex flex-col gap-1 text-sm font-semibold text-ink-strong">
                         <span>
-                          {label}
+                          {label.replace(" (cm)", "")}
                           {required && <span aria-hidden className="text-brand-accent"> *</span>}
                         </span>
-                        <input
-                          inputMode="decimal"
-                          value={row[field]}
-                          onChange={(e) => updateRow(row.key, { [field]: e.target.value } as Partial<Row>)}
-                          disabled={submitting}
-                          required={required}
-                          className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
-                          data-testid={`row-${field}`}
-                        />
+                        <span className="relative">
+                          <input
+                            inputMode="decimal"
+                            value={row[field]}
+                            onChange={(e) => updateRow(row.key, { [field]: onlyNumber(e.target.value) } as Partial<Row>)}
+                            disabled={submitting}
+                            required={required}
+                            placeholder={required ? "Ej. 33.02" : "0"}
+                            className="min-h-11 w-full rounded-md border border-line bg-surface-0 py-2 pl-3 pr-11 text-base font-normal tabular md:min-h-10 md:text-sm"
+                            data-testid={`row-${field}`}
+                          />
+                          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-normal text-ink-muted">
+                            cm
+                          </span>
+                        </span>
                       </label>
                     ))}
                   </fieldset>
                 )}
-                {usesCut(row, product, optionsByProduct) && cutPlans[index] && (
-                  <CutPreview materials={cutPlans[index]!.materials} />
-                )}
+                {usesCut(row, product, optionsByProduct) &&
+                  (cutInputs[index] && cutPlans[index] ? (
+                    <CutPreview materials={cutPlans[index]!.materials} />
+                  ) : (
+                    <CutPending
+                      materials={(optionsByProduct.get(product!.id) ?? []).filter(
+                        (o) => o.cuttable && (o.priority === "REQUIRED" || row.materialIds.includes(o.raw_material_id)),
+                      )}
+                    />
+                  ))}
                 {line && (
                   <p className="order-4 col-span-6 text-xs text-ink-muted tabular md:order-none md:col-span-12">
                     {line.description} · {TIER_LABEL[line.applied_tier]} · {formatMoney(line.unit_price)} ×{" "}

@@ -189,6 +189,8 @@ export async function fetchProductMaterialOptions(): Promise<ProductMaterialOpti
       priority: r.priority,
       name: r.material?.name ?? "",
       cuttable: r.material?.unit === "UNIT" && r.material.width_cm != null && r.material.height_cm != null,
+      sheet_w: r.material?.width_cm != null ? Number(r.material.width_cm) : null,
+      sheet_h: r.material?.height_cm != null ? Number(r.material.height_cm) : null,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
