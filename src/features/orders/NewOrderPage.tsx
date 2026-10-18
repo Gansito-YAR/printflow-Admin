@@ -429,7 +429,7 @@ export function NewOrderPage() {
                         ["cutW", "Base (cm)", true],
                         ["cutH", "Altura (cm)", true],
                         ["cutGap", "Separación entre cortes (cm)", false],
-                        ["cutMargin", "Orilla del pliego (cm)", false],
+                        ["cutMargin", "Margen del pliego (cm)", false],
                       ] as const
                     ).map(([field, label, required]) => (
                       <label key={field} className="flex flex-col gap-1 text-sm font-semibold text-ink-strong">
@@ -458,7 +458,7 @@ export function NewOrderPage() {
                 )}
                 {usesCut(row, product, optionsByProduct) &&
                   (cutInputs[index] && cutPlans[index] ? (
-                    <CutPreview materials={cutPlans[index]!.materials} />
+                    <CutPreview materials={cutPlans[index]!.materials} quantity={Number(row.quantity)} />
                   ) : (
                     <CutPending
                       materials={(optionsByProduct.get(product!.id) ?? []).filter(

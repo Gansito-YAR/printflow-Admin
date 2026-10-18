@@ -147,6 +147,18 @@ it("calculadora de corte: pide base, altura y cantidad, y muestra pliegos y merm
   expect(preview).toHaveTextContent("28.25 % merma");
   expect(preview.querySelectorAll("svg rect").length).toBe(3);
 
+  // Navegación entre pliegos: 500 piezas a 3 por pliego = 167; el último lleva 2.
+  expect(screen.getByTestId("sheet-counter")).toHaveTextContent("Pliego 1 de 167");
+  expect(screen.getByRole("button", { name: "Pliego anterior" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Siguiente pliego" }));
+  expect(screen.getByTestId("sheet-counter")).toHaveTextContent("Pliego 2 de 167");
+  await user.click(screen.getByRole("button", { name: "Último pliego" }));
+  expect(screen.getByTestId("sheet-counter")).toHaveTextContent("Pliego 167 de 167");
+  expect(screen.getByTestId("sheet-detail")).toHaveTextContent("Pliego 167: 2 piezas");
+  expect(screen.getByTestId("sheet-detail")).toHaveTextContent("pliego incompleto");
+  expect(preview.querySelectorAll("svg rect").length).toBe(2);
+  expect(screen.getByRole("button", { name: "Siguiente pliego" })).toBeDisabled();
+
   await waitFor(() => expect(quoteOrder).toHaveBeenCalled());
   expect(quoteOrder.mock.calls.at(-1)![1]).toEqual([{
     product_id: "p2", quantity: "500", cut_width_cm: "33.02", cut_height_cm: "48.26", cut_gap_cm: "0", cut_margin_cm: "0",
