@@ -3,7 +3,7 @@
 
 import { supabase } from "./supabaseClient";
 import { toAppError } from "./errors";
-import type {
+import type { CutPlanLine,
   CreatedOrder,
   Material,
   MaterialUnit,
@@ -191,6 +191,10 @@ export const rpc = {
   },
   setRecipe(productId: string, items: RecipeLineInput[]) {
     return call<{ items: number }>("set_recipe", { p_product_id: productId, p_items: items });
+  },
+  /** Vista previa de la calculadora de corte (no valida: eso lo hace la cotización). */
+  planCuts(items: QuoteItemInput[]) {
+    return call<CutPlanLine[]>("plan_cuts", { p_items: items });
   },
   simulateProductCost(productId: string) {
     return call<ProductSimulation>("simulate_product_cost", { p_product_id: productId });

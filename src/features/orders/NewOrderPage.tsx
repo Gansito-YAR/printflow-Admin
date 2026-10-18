@@ -11,7 +11,7 @@ import { rpc } from "../../lib/rpc";
 import { fetchProductMaterialOptions, fetchProducts } from "../../lib/queries";
 import { groupByCategory } from "../../utils/categories";
 import { toAppError } from "../../lib/errors";
-import type { Customer, Product, ProductMaterialOption, Quote, QuoteItemInput } from "../../lib/types";
+import type { CutPlanLine, Customer, Product, ProductMaterialOption, Quote, QuoteItemInput } from "../../lib/types";
 import { TIER_LABEL, UNIT_LABEL, productUnitLabel } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
@@ -21,6 +21,7 @@ import { CustomerPicker } from "./CustomerPicker";
 import { StickyActions } from "../../components/StickyActions";
 import { EstimatePanel } from "./CostingSection";
 import { MaterialsNotice } from "./MaterialsNotice";
+import { CutPreview } from "./CutPreview";
 
 interface Row {
   key: string;
@@ -30,9 +31,36 @@ interface Row {
   height: string;
   /** Insumos opcionales elegidos por el cliente (si el producto los tiene). */
   materialIds: string[];
+  /** Calculadora de corte: base, altura, separación y orilla (cm). */
+  cutW: string;
+  cutH: string;
+  cutGap: string;
+  cutMargin: string;
 }
 
-const emptyRow = (): Row => ({ key: crypto.randomUUID(), productId: "", quantity: "1", width: "", height: "", materialIds: [] });
+const emptyRow = (): Row => ({
+  key: crypto.randomUUID(), productId: "", quantity: "1", width: "", height: "", materialIds: [],
+  cutW: "", cutH: "", cutGap: "0", cutMargin: "0",
+});
+const INTEGER = /^\d+$/;
+const NON_NEGATIVE = /^\d+(\.\d{1,2})?$/;
+
+/** ¿La partida usa algún insumo cortable (obligatorio o elegido)? Solo en productos que no son por m². */
+function usesCut(row: Row, product: Product | undefined, options: Map<string, ProductMaterialOption[]>): boolean {
+  if (!product || product.pricing_unit === "M2") return false;
+  return (options.get(product.id) ?? []).some(
+    (o) => o.cuttable && (o.priority === "REQUIRED" || row.materialIds.includes(o.raw_material_id)),
+  );
+}
+
+/** Campos de corte de la fila, si están completos y bien escritos. */
+function cutFields(row: Row): Pick<QuoteItemInput, "cut_width_cm" | "cut_height_cm" | "cut_gap_cm" | "cut_margin_cm"> | null {
+  const gap = row.cutGap.trim() || "0";
+  const margin = row.cutMargin.trim() || "0";
+  if (!POSITIVE.test(row.cutW) || !POSITIVE.test(row.cutH) || Number(row.cutW) <= 0 || Number(row.cutH) <= 0) return null;
+  if (!NON_NEGATIVE.test(gap) || !NON_NEGATIVE.test(margin)) return null;
+  return { cut_width_cm: row.cutW, cut_height_cm: row.cutH, cut_gap_cm: gap, cut_margin_cm: margin };
+}
 
 const POSITIVE = /^\d+(\.\d{1,2})?$/;
 
@@ -41,6 +69,7 @@ function toItems(
   rows: Row[],
   products: Map<string, Product>,
   optionals: Map<string, ProductMaterialOption[]>,
+  allOptions: Map<string, ProductMaterialOption[]>,
 ): QuoteItemInput[] | null {
   const items: QuoteItemInput[] = [];
   for (const r of rows) {
@@ -53,6 +82,11 @@ function toItems(
     if (product.pricing_unit === "M2") {
       if (!POSITIVE.test(r.width) || !POSITIVE.test(r.height) || Number(r.width) <= 0 || Number(r.height) <= 0) return null;
       items.push({ product_id: product.id, quantity: r.quantity, width_m: r.width, height_m: r.height, ...mats });
+    } else if (usesCut(r, product, allOptions)) {
+      // Corte: piezas enteras y medidas completas.
+      const cut = cutFields(r);
+      if (!INTEGER.test(r.quantity) || !cut) return null;
+      items.push({ product_id: product.id, quantity: r.quantity, ...mats, ...cut });
     } else {
       items.push({ product_id: product.id, quantity: r.quantity, ...mats });
     }
@@ -114,7 +148,54 @@ export function NewOrderPage() {
     return m;
   }, [materialOptions]);
 
-  const items = useMemo(() => toItems(rows, productMap, optionalsByProduct), [rows, productMap, optionalsByProduct]);
+  const optionsByProduct = useMemo(() => {
+    const m = new Map<string, ProductMaterialOption[]>();
+    for (const o of materialOptions) m.set(o.product_id, [...(m.get(o.product_id) ?? []), o]);
+    return m;
+  }, [materialOptions]);
+
+  const items = useMemo(
+    () => toItems(rows, productMap, optionalsByProduct, optionsByProduct),
+    [rows, productMap, optionalsByProduct, optionsByProduct],
+  );
+
+  // Calculadora de corte en vivo, por fila (no espera a que todo el pedido esté completo).
+  const cutInputs = useMemo(
+    () =>
+      rows.map((r) => {
+        const p = productMap.get(r.productId);
+        const cut = usesCut(r, p, optionsByProduct) ? cutFields(r) : null;
+        if (!p || !cut || !INTEGER.test(r.quantity) || Number(r.quantity) <= 0) return null;
+        return { product_id: p.id, quantity: r.quantity, material_ids: r.materialIds, ...cut } as QuoteItemInput;
+      }),
+    [rows, productMap, optionsByProduct],
+  );
+  const cutKey = JSON.stringify(cutInputs);
+  const [cutPlans, setCutPlans] = useState<(CutPlanLine | null)[]>([]);
+  useEffect(() => {
+    const valid = cutInputs.map((c, i) => (c ? { c, i } : null)).filter(Boolean) as { c: QuoteItemInput; i: number }[];
+    if (valid.length === 0) {
+      setCutPlans([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await rpc.planCuts(valid.map((v) => v.c));
+        if (cancelled) return;
+        const byRow: (CutPlanLine | null)[] = cutInputs.map(() => null);
+        valid.forEach((v, k) => (byRow[v.i] = res[k] ?? null));
+        setCutPlans(byRow);
+      } catch {
+        if (!cancelled) setCutPlans([]);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cutKey]);
 
   // Cotización en vivo, con espera de 350 ms entre cambios.
   useEffect(() => {
@@ -241,9 +322,21 @@ export function NewOrderPage() {
                     ))}
                   </select>
                 </label>
-                {/* Sin campo de cantidad (pedido del cliente, 17/10/2026): cada
-                    partida va con cantidad 1 mientras se define el nuevo cálculo. */}
-                <div className="hidden md:col-span-2 md:block" />
+                {product && product.pricing_unit !== "M2" ? (
+                  <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
+                    {usesCut(row, product, optionsByProduct) ? "Cantidad (piezas)" : product.pricing_unit === "PACKAGE" ? "Paquetes" : "Cantidad"}
+                    <input
+                      inputMode="numeric"
+                      value={row.quantity}
+                      onChange={(e) => updateRow(row.key, { quantity: e.target.value })}
+                      disabled={submitting}
+                      className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
+                      data-testid="row-quantity"
+                    />
+                  </label>
+                ) : (
+                  <div className="hidden md:col-span-2 md:block" />
+                )}
                 {product?.pricing_unit === "M2" ? (
                   <>
                     <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
@@ -317,6 +410,41 @@ export function NewOrderPage() {
                       <p className="text-xs text-ink-muted">Incluye siempre: {requiredByProduct.get(product.id)!.map((o) => o.name).join(", ")}.</p>
                     )}
                   </fieldset>
+                )}
+                {usesCut(row, product, optionsByProduct) && (
+                  <fieldset className="order-4 col-span-6 grid grid-cols-2 gap-2 md:order-none md:col-span-12 md:grid-cols-4 md:gap-3" data-testid="cut-fields">
+                    <legend className="mb-1 text-sm font-semibold text-ink-strong">
+                      Medida de la pieza a imprimir
+                      <span className="ml-2 text-xs font-normal text-ink-muted">El sistema calcula los pliegos y la merma.</span>
+                    </legend>
+                    {(
+                      [
+                        ["cutW", "Base (cm)", true],
+                        ["cutH", "Altura (cm)", true],
+                        ["cutGap", "Separación entre cortes (cm)", false],
+                        ["cutMargin", "Orilla del pliego (cm)", false],
+                      ] as const
+                    ).map(([field, label, required]) => (
+                      <label key={field} className="flex flex-col gap-1 text-sm font-semibold text-ink-strong">
+                        <span>
+                          {label}
+                          {required && <span aria-hidden className="text-brand-accent"> *</span>}
+                        </span>
+                        <input
+                          inputMode="decimal"
+                          value={row[field]}
+                          onChange={(e) => updateRow(row.key, { [field]: e.target.value } as Partial<Row>)}
+                          disabled={submitting}
+                          required={required}
+                          className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
+                          data-testid={`row-${field}`}
+                        />
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+                {usesCut(row, product, optionsByProduct) && cutPlans[index] && (
+                  <CutPreview materials={cutPlans[index]!.materials} />
                 )}
                 {line && (
                   <p className="order-4 col-span-6 text-xs text-ink-muted tabular md:order-none md:col-span-12">

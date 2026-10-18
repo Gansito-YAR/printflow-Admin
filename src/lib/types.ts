@@ -202,6 +202,38 @@ export interface QuoteItemInput {
   height_m?: number | string;
   /** Insumos OPCIONALES elegidos (migración 0024). Obligatorio si el producto tiene opcionales. */
   material_ids?: string[];
+  /** Calculadora de corte (migración 0025): medidas de la pieza en cm. */
+  cut_width_cm?: string;
+  cut_height_cm?: string;
+  cut_gap_cm?: string;
+  cut_margin_cm?: string;
+}
+
+/** Plan de corte de una partida en un material (lo calcula la base: plan_cuts). */
+export interface CutPlanMaterial {
+  raw_material_id: string;
+  name: string;
+  priority: RecipePriority;
+  chosen: boolean;
+  sheet_w: string;
+  sheet_h: string;
+  pieces_per_sheet: number;
+  sheets_required: number | null;
+  used_pct_sheet: string | null;
+  used_pct: string | null;
+  waste_pct: string | null;
+  material_cost: Money | null;
+  layout: {
+    pieces_per_sheet: number;
+    margin?: number;
+    gap?: number;
+    rects: { x: number; y: number; w: number; h: number }[];
+  } | null;
+}
+
+export interface CutPlanLine {
+  line_no: number;
+  materials: CutPlanMaterial[];
 }
 
 /** Insumo de la receta de un producto, para elegir material al capturar el pedido. */
@@ -210,6 +242,8 @@ export interface ProductMaterialOption {
   raw_material_id: string;
   priority: RecipePriority;
   name: string;
+  /** Insumo cortable = por pieza y con base/altura. */
+  cuttable: boolean;
 }
 
 export interface QuoteLine {

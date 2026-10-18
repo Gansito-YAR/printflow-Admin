@@ -175,15 +175,21 @@ const MATERIAL_SELECT =
 export async function fetchProductMaterialOptions(): Promise<ProductMaterialOption[]> {
   const result = await supabase
     .from("recipes")
-    .select("product_id, raw_material_id, priority, material:raw_materials(name)");
+    .select("product_id, raw_material_id, priority, material:raw_materials(name, unit, width_cm, height_cm)");
   if (result.error) throw result.error;
   return ((result.data ?? []) as unknown as {
     product_id: string;
     raw_material_id: string;
     priority: ProductMaterialOption["priority"];
-    material: { name: string } | null;
+    material: { name: string; unit: string; width_cm: number | null; height_cm: number | null } | null;
   }[])
-    .map((r) => ({ product_id: r.product_id, raw_material_id: r.raw_material_id, priority: r.priority, name: r.material?.name ?? "" }))
+    .map((r) => ({
+      product_id: r.product_id,
+      raw_material_id: r.raw_material_id,
+      priority: r.priority,
+      name: r.material?.name ?? "",
+      cuttable: r.material?.unit === "UNIT" && r.material.width_cm != null && r.material.height_cm != null,
+    }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
 
