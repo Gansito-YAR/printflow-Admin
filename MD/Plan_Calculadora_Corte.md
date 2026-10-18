@@ -20,7 +20,7 @@ Al capturar una partida de un producto **por pieza**, el usuario indica **Base**
 
 1. **Varios materiales elegidos:** el corte se calcula en **cada** material con la misma cantidad, y cada uno descuenta sus pliegos. El usuario decide cómo los combina.
 2. **Separación y orilla:** se piden en cada partida, en cm, con 0 por defecto.
-3. **Precio:** en productos por pieza, precio por pieza × cantidad. Las demás unidades de cobro se adaptan después.
+3. **Precio:** en productos por pieza, precio por pieza × cantidad. **En productos por m²** (17/10/2026, migración 0026) se usa el mismo flujo (cantidad, base, altura, separación, margen y material) y se cobra cantidad × (base × altura en m²) × precio por m². Ancho y alto en metros pasan a 4 decimales.
 4. **Alcance:** insumos **por pieza** con base y altura. Los insumos por m² o en rollo se integran después.
 
 ## Base de datos (migración 0025)

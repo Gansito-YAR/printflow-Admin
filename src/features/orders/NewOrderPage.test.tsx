@@ -164,3 +164,40 @@ it("calculadora de corte: pide base, altura y cantidad, y muestra pliegos y merm
     product_id: "p2", quantity: "500", cut_width_cm: "33.02", cut_height_cm: "48.26", cut_gap_cm: "0", cut_margin_cm: "0",
   }]);
 });
+
+it("producto por m²: pide cantidad, base y altura en cm y cobra por el área", async () => {
+  const user = userEvent.setup();
+  products = [{
+    id: "p3", sku: "SEN-M2", name: "Señaletica", category_id: "c1", category: { id: "c1", name: "Gran formato", sort_order: 1 },
+    pricing_unit: "M2", retail_price: "750.00", wholesale_price: "600.00", wholesale_min_qty: null, is_active: true, fixed_cost: "0.00",
+  }];
+  materialOptions = [];
+  quoteOrder.mockReset();
+  quoteOrder.mockResolvedValue({ items: [], total: "2625.00", deposit_required: "1312.50", deposit_pct: "50.00" });
+  render(
+    <MemoryRouter>
+      <NewOrderPage />
+    </MemoryRouter>,
+  );
+  await user.click(screen.getByRole("button", { name: "+ Cliente nuevo" }));
+  fireEvent.change(screen.getByLabelText(/Teléfono/), { target: { value: "6671234567" } });
+  fireEvent.change(screen.getByLabelText(/Nombre o razón social/), { target: { value: "Ana" } });
+  await user.click(screen.getByRole("button", { name: "Registrar cliente" }));
+  await screen.findByText("Ana");
+
+  const select = (await screen.findAllByRole("combobox"))[0]!;
+  await waitFor(() => expect(screen.getByRole("option", { name: /Señaletica/ })).toBeInTheDocument());
+  fireEvent.change(select, { target: { value: "p3" } });
+
+  expect(await screen.findByTestId("cut-fields")).toHaveTextContent("Se cobra por el área");
+  expect(screen.queryByText("Ancho (m)")).toBeNull();
+  fireEvent.change(screen.getByTestId("row-quantity"), { target: { value: "50" } });
+  fireEvent.change(screen.getByTestId("row-cutW"), { target: { value: "20" } });
+  fireEvent.change(screen.getByTestId("row-cutH"), { target: { value: "35" } });
+  expect(screen.getByTestId("m2-summary")).toHaveTextContent("0.07 m² por pieza × 50 = 3.5 m² a cobrar");
+
+  await waitFor(() => expect(quoteOrder).toHaveBeenCalled());
+  expect(quoteOrder.mock.calls.at(-1)![1]).toEqual([{
+    product_id: "p3", quantity: "50", cut_width_cm: "20", cut_height_cm: "35", cut_gap_cm: "0", cut_margin_cm: "0",
+  }]);
+});

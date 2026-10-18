@@ -54,10 +54,15 @@ const NON_NEGATIVE = /^\d+(\.\d{1,2})?$/;
 
 /** ¿La partida usa algún insumo cortable (obligatorio o elegido)? Solo en productos que no son por m². */
 function usesCut(row: Row, product: Product | undefined, options: Map<string, ProductMaterialOption[]>): boolean {
-  if (!product || product.pricing_unit === "M2") return false;
+  if (!product) return false;
   return (options.get(product.id) ?? []).some(
     (o) => o.cuttable && (o.priority === "REQUIRED" || row.materialIds.includes(o.raw_material_id)),
   );
+}
+
+/** ¿La partida pide base y altura? Siempre en m² (para cobrar el área) y cuando hay corte. */
+function measured(row: Row, product: Product | undefined, options: Map<string, ProductMaterialOption[]>): boolean {
+  return Boolean(product) && (product!.pricing_unit === "M2" || usesCut(row, product, options));
 }
 
 /** Campos de corte de la fila, si están completos y bien escritos. */
@@ -86,10 +91,7 @@ function toItems(
     const hasOptionals = (optionals.get(product.id)?.length ?? 0) > 0;
     if (hasOptionals && r.materialIds.length === 0) return null;
     const mats = hasOptionals ? { material_ids: r.materialIds } : {};
-    if (product.pricing_unit === "M2") {
-      if (!POSITIVE.test(r.width) || !POSITIVE.test(r.height) || Number(r.width) <= 0 || Number(r.height) <= 0) return null;
-      items.push({ product_id: product.id, quantity: r.quantity, width_m: r.width, height_m: r.height, ...mats });
-    } else if (usesCut(r, product, allOptions)) {
+    if (measured(r, product, allOptions)) {
       // Corte: piezas enteras y medidas completas.
       const cut = cutFields(r);
       if (!INTEGER.test(r.quantity) || !cut) return null;
@@ -329,9 +331,9 @@ export function NewOrderPage() {
                     ))}
                   </select>
                 </label>
-                {product && product.pricing_unit !== "M2" ? (
+                {product ? (
                   <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
-                    {usesCut(row, product, optionsByProduct) ? "Cantidad (piezas)" : product.pricing_unit === "PACKAGE" ? "Paquetes" : "Cantidad"}
+                    {measured(row, product, optionsByProduct) ? "Cantidad (piezas)" : product.pricing_unit === "PACKAGE" ? "Paquetes" : "Cantidad"}
                     <input
                       inputMode="numeric"
                       value={row.quantity}
@@ -344,32 +346,7 @@ export function NewOrderPage() {
                 ) : (
                   <div className="hidden md:col-span-2 md:block" />
                 )}
-                {product?.pricing_unit === "M2" ? (
-                  <>
-                    <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
-                      Ancho (m)
-                      <input
-                        inputMode="decimal"
-                        value={row.width}
-                        onChange={(e) => updateRow(row.key, { width: e.target.value })}
-                        disabled={submitting}
-                        className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
-                      />
-                    </label>
-                    <label className="order-3 col-span-2 flex flex-col gap-1 text-sm font-semibold text-ink-strong md:order-none">
-                      Alto (m)
-                      <input
-                        inputMode="decimal"
-                        value={row.height}
-                        onChange={(e) => updateRow(row.key, { height: e.target.value })}
-                        disabled={submitting}
-                        className="min-h-11 w-full rounded-md border border-line bg-surface-0 px-3 text-base font-normal md:min-h-10 md:text-sm"
-                      />
-                    </label>
-                  </>
-                ) : (
-                  <div className="order-3 col-span-4 hidden md:order-none md:block" />
-                )}
+                <div className="order-3 col-span-4 hidden md:order-none md:block" />
                 <div className="order-2 col-span-1 flex justify-end md:order-none">
                   <Button
                     variant="ghost"
@@ -418,11 +395,15 @@ export function NewOrderPage() {
                     )}
                   </fieldset>
                 )}
-                {usesCut(row, product, optionsByProduct) && (
+                {measured(row, product, optionsByProduct) && (
                   <fieldset className="order-4 col-span-6 grid grid-cols-2 gap-2 md:order-none md:col-span-12 md:grid-cols-4 md:gap-3" data-testid="cut-fields">
                     <legend className="mb-1 text-sm font-semibold text-ink-strong">
                       Medida de la pieza a imprimir
-                      <span className="ml-2 text-xs font-normal text-ink-muted">El sistema calcula los pliegos y la merma.</span>
+                      <span className="ml-2 text-xs font-normal text-ink-muted">
+                        {usesCut(row, product, optionsByProduct)
+                          ? "El sistema calcula los pliegos y la merma."
+                          : "Se cobra por el área: cantidad × base × altura."}
+                      </span>
                     </legend>
                     {(
                       [
@@ -454,6 +435,20 @@ export function NewOrderPage() {
                         </span>
                       </label>
                     ))}
+                    {product!.pricing_unit === "M2" && cutFields(row) && INTEGER.test(row.quantity) && Number(row.quantity) > 0 && (
+                      <p className="col-span-2 tabular text-xs text-ink-base md:col-span-4" data-testid="m2-summary">
+                        {(() => {
+                          const each = (Number(row.cutW) * Number(row.cutH)) / 10000;
+                          const total = each * Number(row.quantity);
+                          const fmt = (n: number) => n.toLocaleString("es-MX", { maximumFractionDigits: 4 });
+                          return (
+                            <>
+                              {fmt(each)} m² por pieza × {row.quantity} = <strong className="text-ink-strong">{fmt(total)} m²</strong> a cobrar
+                            </>
+                          );
+                        })()}
+                      </p>
+                    )}
                   </fieldset>
                 )}
                 {usesCut(row, product, optionsByProduct) &&
