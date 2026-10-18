@@ -8,10 +8,10 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { rpc } from "../../lib/rpc";
-import { fetchProducts } from "../../lib/queries";
+import { fetchProductMaterialOptions, fetchProducts } from "../../lib/queries";
 import { groupByCategory } from "../../utils/categories";
 import { toAppError } from "../../lib/errors";
-import type { Customer, Product, Quote, QuoteItemInput } from "../../lib/types";
+import type { Customer, Product, ProductMaterialOption, Quote, QuoteItemInput } from "../../lib/types";
 import { TIER_LABEL, UNIT_LABEL, productUnitLabel } from "../../lib/types";
 import { useSettingsStore } from "../../store/settings";
 import { formatMoney } from "../../utils/money";
@@ -28,23 +28,33 @@ interface Row {
   quantity: string;
   width: string;
   height: string;
+  /** Insumos opcionales elegidos por el cliente (si el producto los tiene). */
+  materialIds: string[];
 }
 
-const emptyRow = (): Row => ({ key: crypto.randomUUID(), productId: "", quantity: "1", width: "", height: "" });
+const emptyRow = (): Row => ({ key: crypto.randomUUID(), productId: "", quantity: "1", width: "", height: "", materialIds: [] });
 
 const POSITIVE = /^\d+(\.\d{1,2})?$/;
 
 /** Convierte las filas en partidas solo si TODAS están completas y bien formadas. */
-function toItems(rows: Row[], products: Map<string, Product>): QuoteItemInput[] | null {
+function toItems(
+  rows: Row[],
+  products: Map<string, Product>,
+  optionals: Map<string, ProductMaterialOption[]>,
+): QuoteItemInput[] | null {
   const items: QuoteItemInput[] = [];
   for (const r of rows) {
     const product = products.get(r.productId);
     if (!product || !POSITIVE.test(r.quantity) || Number(r.quantity) <= 0) return null;
+    // Con materiales a elegir, la partida no está completa hasta elegir al menos uno.
+    const hasOptionals = (optionals.get(product.id)?.length ?? 0) > 0;
+    if (hasOptionals && r.materialIds.length === 0) return null;
+    const mats = hasOptionals ? { material_ids: r.materialIds } : {};
     if (product.pricing_unit === "M2") {
       if (!POSITIVE.test(r.width) || !POSITIVE.test(r.height) || Number(r.width) <= 0 || Number(r.height) <= 0) return null;
-      items.push({ product_id: product.id, quantity: r.quantity, width_m: r.width, height_m: r.height });
+      items.push({ product_id: product.id, quantity: r.quantity, width_m: r.width, height_m: r.height, ...mats });
     } else {
-      items.push({ product_id: product.id, quantity: r.quantity });
+      items.push({ product_id: product.id, quantity: r.quantity, ...mats });
     }
   }
   return items.length ? items : null;
@@ -55,6 +65,7 @@ export function NewOrderPage() {
   const timezone = useSettingsStore((s) => s.timezone);
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [materialOptions, setMaterialOptions] = useState<ProductMaterialOption[]>([]);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
@@ -80,15 +91,30 @@ export function NewOrderPage() {
   const inFlight = useRef(false);
 
   useEffect(() => {
-    fetchProducts(true)
-      .then(setProducts)
+    Promise.all([fetchProducts(true), fetchProductMaterialOptions()])
+      .then(([prods, opts]) => {
+        setProducts(prods);
+        setMaterialOptions(opts);
+      })
       .catch((err) => setProductsError(toAppError(err).userText));
   }, []);
 
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const byCategory = useMemo(() => groupByCategory(products), [products]);
 
-  const items = useMemo(() => toItems(rows, productMap), [rows, productMap]);
+  // Por producto: insumos opcionales (se eligen) y obligatorios (van siempre).
+  const optionalsByProduct = useMemo(() => {
+    const m = new Map<string, ProductMaterialOption[]>();
+    for (const o of materialOptions) if (o.priority === "OPTIONAL") m.set(o.product_id, [...(m.get(o.product_id) ?? []), o]);
+    return m;
+  }, [materialOptions]);
+  const requiredByProduct = useMemo(() => {
+    const m = new Map<string, ProductMaterialOption[]>();
+    for (const o of materialOptions) if (o.priority === "REQUIRED") m.set(o.product_id, [...(m.get(o.product_id) ?? []), o]);
+    return m;
+  }, [materialOptions]);
+
+  const items = useMemo(() => toItems(rows, productMap, optionalsByProduct), [rows, productMap, optionalsByProduct]);
 
   // Cotización en vivo, con espera de 350 ms entre cambios.
   useEffect(() => {
@@ -126,6 +152,8 @@ export function NewOrderPage() {
       prev.map((r) => {
         if (r.key !== key) return r;
         const next = { ...r, ...patch };
+        // Otro producto = otros materiales posibles.
+        if (patch.productId !== undefined && patch.productId !== r.productId) next.materialIds = [];
         if (patch.productId !== undefined && productMap.get(patch.productId)?.pricing_unit !== "M2") {
           next.width = "";
           next.height = "";
@@ -259,6 +287,44 @@ export function NewOrderPage() {
                     ×
                   </Button>
                 </div>
+                {product && (optionalsByProduct.get(product.id)?.length ?? 0) > 0 && (
+                  <fieldset className="order-4 col-span-6 flex flex-col gap-1.5 md:order-none md:col-span-12" data-testid="material-choice">
+                    <legend className="text-sm font-semibold text-ink-strong">
+                      Material <span aria-hidden className="text-brand-accent">*</span>
+                      <span className="ml-2 text-xs font-normal text-ink-muted">Elija uno o varios, según lo que pida el cliente.</span>
+                    </legend>
+                    <div className="flex flex-wrap gap-2">
+                      {optionalsByProduct.get(product.id)!.map((o) => {
+                        const on = row.materialIds.includes(o.raw_material_id);
+                        return (
+                          <button
+                            key={o.raw_material_id}
+                            type="button"
+                            aria-pressed={on}
+                            disabled={submitting}
+                            onClick={() =>
+                              updateRow(row.key, {
+                                materialIds: on
+                                  ? row.materialIds.filter((id) => id !== o.raw_material_id)
+                                  : [...row.materialIds, o.raw_material_id],
+                              })
+                            }
+                            className={`min-h-11 rounded-full border-2 px-4 text-sm font-semibold md:min-h-9 ${
+                              on ? "border-primary bg-primary text-primary-ink" : "border-line bg-surface-0 text-ink-strong hover:border-line-strong"
+                            }`}
+                          >
+                            {on && "✓ "}
+                            {o.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {row.materialIds.length === 0 && <p className="text-xs text-warning-ink">Falta elegir el material.</p>}
+                    {(requiredByProduct.get(product.id)?.length ?? 0) > 0 && (
+                      <p className="text-xs text-ink-muted">Incluye siempre: {requiredByProduct.get(product.id)!.map((o) => o.name).join(", ")}.</p>
+                    )}
+                  </fieldset>
+                )}
                 {line && (
                   <p className="order-4 col-span-6 text-xs text-ink-muted tabular md:order-none md:col-span-12">
                     {line.description} · {TIER_LABEL[line.applied_tier]} · {formatMoney(line.unit_price)} ×{" "}

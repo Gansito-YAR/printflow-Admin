@@ -5,7 +5,7 @@
 
 import { supabase } from "./supabaseClient";
 import { toAppError } from "./errors";
-import type {
+import type { ProductMaterialOption,
   Customer,
   InventoryTx,
   Material,
@@ -170,6 +170,22 @@ export async function fetchOrderHistory(f: OrderHistoryFilter): Promise<{ rows: 
 
 const MATERIAL_SELECT =
   "id, sku, name, unit, unit_cost::text, current_stock::text, min_stock::text, is_active, archived_at, width_cm::text, height_cm::text";
+
+/** Insumos de la receta de cada producto (obligatorios y opcionales), para la captura de pedidos. */
+export async function fetchProductMaterialOptions(): Promise<ProductMaterialOption[]> {
+  const result = await supabase
+    .from("recipes")
+    .select("product_id, raw_material_id, priority, material:raw_materials(name)");
+  if (result.error) throw result.error;
+  return ((result.data ?? []) as unknown as {
+    product_id: string;
+    raw_material_id: string;
+    priority: ProductMaterialOption["priority"];
+    material: { name: string } | null;
+  }[])
+    .map((r) => ({ product_id: r.product_id, raw_material_id: r.raw_material_id, priority: r.priority, name: r.material?.name ?? "" }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
 
 export async function fetchMaterials(onlyActive = false): Promise<Material[]> {
   // Los eliminados nunca se listan (siguen existiendo solo para el historial).

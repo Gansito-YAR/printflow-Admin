@@ -200,6 +200,16 @@ export interface QuoteItemInput {
   quantity: number | string;
   width_m?: number | string;
   height_m?: number | string;
+  /** Insumos OPCIONALES elegidos (migración 0024). Obligatorio si el producto tiene opcionales. */
+  material_ids?: string[];
+}
+
+/** Insumo de la receta de un producto, para elegir material al capturar el pedido. */
+export interface ProductMaterialOption {
+  product_id: string;
+  raw_material_id: string;
+  priority: RecipePriority;
+  name: string;
 }
 
 export interface QuoteLine {
