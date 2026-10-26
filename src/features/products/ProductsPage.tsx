@@ -146,8 +146,8 @@ export function ProductsPage() {
             },
             { key: "cat", header: "Categoría", hideOnTablet: true, render: (p) => p.category?.name ?? "—" },
             { key: "unit", header: "Unidad", render: (p) => productUnitLabel(p) },
-            { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.retail_price)}</span> },
-            { key: "wholesale", header: "Mayoreo", align: "right", render: (p) => <span className="tabular">{formatMoney(p.wholesale_price)}</span> },
+            { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{p.retail_price ? formatMoney(p.retail_price) : "—"}</span> },
+            { key: "wholesale", header: "Mayoreo", align: "right", render: (p) => <span className="tabular">{p.wholesale_price ? formatMoney(p.wholesale_price) : "—"}</span> },
             { key: "min", header: "Mín. mayoreo", align: "right", hideOnTablet: true, render: (p) => <span className="tabular">{p.wholesale_min_qty ?? "—"}</span> },
             { key: "active", header: "Estado", hideOnMobile: true, render: (p) => (p.is_active ? "Activo" : "Inactivo") },
           ]}
@@ -208,6 +208,16 @@ export function ProductsPage() {
 
 const NEW_CATEGORY = "__nueva__";
 
+/** Papelería: sus precios se manejan con otro sistema (por definir), no con menudeo/mayoreo. */
+export function isStationery(categoryName: string | null | undefined): boolean {
+  return (categoryName ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .startsWith("papeler");
+}
+
 function ProductForm({
   product,
   categories,
@@ -228,6 +238,7 @@ function ProductForm({
   const [newCategory, setNewCategory] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const stationery = isStationery(categories.find((c) => c.id === categoryId)?.name);
 
   async function onCreateCategory() {
     setCreatingCategory(true);
@@ -252,15 +263,22 @@ function ProductForm({
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (inFlight.current) return;
-    const r = parseAmountInput(retail);
-    const w = parseAmountInput(wholesale);
-    const m = minQty.trim() ? parseAmountInput(minQty) : null;
     if (!sku.trim() || !name.trim()) return setError("SKU y nombre son obligatorios.");
     if (!categoryId || categoryId === NEW_CATEGORY) return setError("Elija una categoría o termine de crear la nueva.");
-    if (!r.ok) return setError(`Menudeo: ${r.error}`);
-    if (!w.ok) return setError(`Mayoreo: ${w.error}`);
-    if (isGreater(w.value, r.value)) return setError("El precio de mayoreo no puede ser mayor al de menudeo.");
-    if (m && !m.ok) return setError(`Mínimo de mayoreo: ${m.error}`);
+    // Papelería: sin precio de menudeo/mayoreo ni mínimo (otro sistema de precios).
+    let prices: { retail_price: string | null; wholesale_price: string | null; wholesale_min_qty: string | null } = {
+      retail_price: null, wholesale_price: null, wholesale_min_qty: null,
+    };
+    if (!stationery) {
+      const r = parseAmountInput(retail);
+      const w = parseAmountInput(wholesale);
+      const m = minQty.trim() ? parseAmountInput(minQty) : null;
+      if (!r.ok) return setError(`Menudeo: ${r.error}`);
+      if (!w.ok) return setError(`Mayoreo: ${w.error}`);
+      if (isGreater(w.value, r.value)) return setError("El precio de mayoreo no puede ser mayor al de menudeo.");
+      if (m && !m.ok) return setError(`Mínimo de mayoreo: ${m.error}`);
+      prices = { retail_price: r.value, wholesale_price: w.value, wholesale_min_qty: m && m.ok ? m.value : null };
+    }
     // Paquete: cuántas piezas trae (entero de 1 a 1,000,000). Las demás unidades no lo llevan.
     let unitsPerPackage: number | null = null;
     if (unit === "PACKAGE") {
@@ -279,9 +297,7 @@ function ProductForm({
       category_id: categoryId,
       // La unidad de cobro no se cambia tras crear el producto.
       ...(product ? {} : { pricing_unit: unit }),
-      retail_price: r.value,
-      wholesale_price: w.value,
-      wholesale_min_qty: m && m.ok ? m.value : null,
+      ...prices,
       units_per_package: unitsPerPackage,
       is_active: active,
     };
@@ -388,6 +404,13 @@ function ProductForm({
             required
           />
         )}
+        {stationery ? (
+          <p className="rounded-md border border-line bg-surface-1 p-3 text-sm text-ink-base sm:col-span-2" data-testid="stationery-note">
+            <strong className="text-ink-strong">Papelería:</strong> los precios de estos productos se configuran con otro sistema.
+            No se piden precio de menudeo, de mayoreo ni cantidad mínima.
+          </p>
+        ) : (
+        <>
         <TextField label="Precio menudeo" help={`Precio normal ${perUnitText(unit)}.`} inputMode="decimal" value={retail} onChange={(e) => setRetail(e.target.value)} disabled={saving} required />
         <TextField label="Precio mayoreo" help={`Precio ${perUnitText(unit)} para clientes de mayoreo o compras grandes.`} inputMode="decimal" value={wholesale} onChange={(e) => setWholesale(e.target.value)} disabled={saving} required />
         <TextField
@@ -398,6 +421,8 @@ function ProductForm({
           hint="Vacío = solo clientes de tarifa Mayoreo."
           disabled={saving}
         />
+        </>
+        )}
       </div>
       <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
         <input type="checkbox" className="h-5 w-5 shrink-0" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />

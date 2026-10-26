@@ -105,8 +105,9 @@ export interface Product {
   category_id: string;
   category: Pick<ProductCategory, "id" | "name" | "sort_order"> | null;
   pricing_unit: PricingUnit;
-  retail_price: Money;
-  wholesale_price: Money;
+  /** Nulos en papelería: sus precios vendrán de otro sistema (migración 0027). */
+  retail_price: Money | null;
+  wholesale_price: Money | null;
   wholesale_min_qty: string | null;
   /** Piezas por paquete. Solo en productos con unidad PACKAGE; null en los demás. */
   units_per_package?: number | null;
