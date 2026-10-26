@@ -95,6 +95,13 @@ it("producto con materiales opcionales: pide elegir material antes de cotizar", 
 
   await user.click(screen.getByRole("button", { name: "Estireno" }));
   expect(screen.getByRole("button", { name: /Estireno/ })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.queryByTestId("material-combination")).toBeNull(); // un solo material: sin aviso
+
+  // Dos materiales = combinación: aparece el aviso con los nombres.
+  await user.click(screen.getByRole("button", { name: "Coroplast" }));
+  expect(screen.getByTestId("material-combination")).toHaveTextContent("Combinación de materiales: cada pieza llevará Coroplast + Estireno");
+  await user.click(screen.getByRole("button", { name: /Coroplast/ }));
+  expect(screen.queryByTestId("material-combination")).toBeNull();
   await waitFor(() => expect(quoteOrder).toHaveBeenCalled());
   expect(quoteOrder.mock.calls.at(-1)![1]).toEqual([{ product_id: "p1", quantity: "1", material_ids: ["m-est"] }]);
 });

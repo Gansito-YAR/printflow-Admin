@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Layers } from "lucide-react";
 import { rpc } from "../../lib/rpc";
 import { fetchProductMaterialOptions, fetchProducts } from "../../lib/queries";
 import { groupByCategory } from "../../utils/categories";
@@ -390,6 +391,24 @@ export function NewOrderPage() {
                       })}
                     </div>
                     {row.materialIds.length === 0 && <p className="text-xs text-warning-ink">Falta elegir el material.</p>}
+                    {row.materialIds.length >= 2 && (
+                      <p
+                        role="status"
+                        className="flex items-start gap-2 rounded-md border border-warning-line bg-warning px-3 py-2 text-sm text-warning-ink"
+                        data-testid="material-combination"
+                      >
+                        <Layers size={16} aria-hidden className="mt-0.5 shrink-0" />
+                        <span>
+                          <strong>Combinación de materiales:</strong> cada pieza llevará{" "}
+                          {optionalsByProduct
+                            .get(product.id)!
+                            .filter((o) => row.materialIds.includes(o.raw_material_id))
+                            .map((o) => o.name)
+                            .join(" + ")}
+                          . Se calcula el corte y se descuentan pliegos de cada material. Si el cliente solo quiere uno, deje uno seleccionado.
+                        </span>
+                      </p>
+                    )}
                     {(requiredByProduct.get(product.id)?.length ?? 0) > 0 && (
                       <p className="text-xs text-ink-muted">Incluye siempre: {requiredByProduct.get(product.id)!.map((o) => o.name).join(", ")}.</p>
                     )}
