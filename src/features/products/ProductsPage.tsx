@@ -14,6 +14,7 @@ import { Button, EmptyState, ErrorPanel, Modal, SelectField, Spinner, TextField 
 import { DataList } from "../../components/DataList";
 import { RecipeModal } from "./RecipeModal";
 import { CategoriesModal, createCategory } from "./CategoriesModal";
+import { PriceTiersTable, newTierRow, tiersAreValid, type TierRow } from "./PriceTiersTable";
 
 export function ProductsPage() {
   const [rows, setRows] = useState<Product[]>([]);
@@ -146,7 +147,7 @@ export function ProductsPage() {
             },
             { key: "cat", header: "Categoría", hideOnTablet: true, render: (p) => p.category?.name ?? "—" },
             { key: "unit", header: "Unidad", render: (p) => productUnitLabel(p) },
-            { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{p.retail_price ? formatMoney(p.retail_price) : "—"}</span> },
+            { key: "retail", header: "Menudeo", align: "right", render: (p) => <span className="tabular">{p.retail_price ? formatMoney(p.retail_price) : isStationery(p.category?.name) ? "Por cantidad" : "—"}</span> },
             { key: "wholesale", header: "Mayoreo", align: "right", render: (p) => <span className="tabular">{p.wholesale_price ? formatMoney(p.wholesale_price) : "—"}</span> },
             { key: "min", header: "Mín. mayoreo", align: "right", hideOnTablet: true, render: (p) => <span className="tabular">{p.wholesale_min_qty ?? "—"}</span> },
             { key: "active", header: "Estado", hideOnMobile: true, render: (p) => (p.is_active ? "Activo" : "Inactivo") },
@@ -258,6 +259,34 @@ function ProductForm({
   const [minQty, setMinQty] = useState(product?.wholesale_min_qty ?? "");
   const [perPackage, setPerPackage] = useState(product?.units_per_package ? String(product.units_per_package) : "");
   const [active, setActive] = useState(product?.is_active ?? true);
+  // Precios por cantidad: solo al EDITAR un producto de papelería.
+  const editingStationery = Boolean(product) && stationery;
+  const [tiers, setTiers] = useState<TierRow[]>([]);
+  const [tiersLoaded, setTiersLoaded] = useState(false);
+  useEffect(() => {
+    if (!product || !editingStationery) return;
+    let cancelled = false;
+    supabase
+      .from("product_price_tiers")
+      .select("max_qty, price")
+      .eq("product_id", product.id)
+      .order("position")
+      .then(({ data, error: err }) => {
+        if (cancelled) return;
+        if (err) setError(toAppError(err).userText);
+        setTiers(((data ?? []) as { max_qty: number | null; price: string | number }[]).map((t) =>
+          newTierRow(t.max_qty == null ? "" : String(t.max_qty), String(Number(t.price)))));
+        setTiersLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product, editingStationery]);
+  // Papelería sin filas (ni precio fijo) no se puede activar.
+  const canActivate = !editingStationery || tiers.length > 0 || Boolean(product?.retail_price);
+  useEffect(() => {
+    if (editingStationery && tiersLoaded && !canActivate) setActive(false);
+  }, [editingStationery, tiersLoaded, canActivate]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const inFlight = useRef(false);
@@ -290,9 +319,27 @@ function ProductForm({
       unitsPerPackage = n;
     }
 
+    if (editingStationery) {
+      if (!tiersLoaded) return setError("Espere a que carguen los precios por cantidad.");
+      if (!tiersAreValid(tiers)) return setError("Revise la tabla de precios por cantidad: hay filas con error.");
+    }
+
     inFlight.current = true;
     setSaving(true);
     setError(null);
+    // La tabla se guarda primero: activar papelería exige que ya tenga filas.
+    if (editingStationery && product) {
+      try {
+        await rpc.setPriceTiers(
+          product.id,
+          tiers.map((t) => ({ max_qty: t.max.trim() === "" ? null : Number(t.max), price: t.price.trim() })),
+        );
+      } catch (err) {
+        inFlight.current = false;
+        setSaving(false);
+        return setError(toAppError(err).userText);
+      }
+    }
     const payload = {
       sku: sku.trim(),
       name: name.trim(),
@@ -301,7 +348,7 @@ function ProductForm({
       ...(product ? {} : { pricing_unit: unit }),
       ...prices,
       units_per_package: unitsPerPackage,
-      is_active: forcedInactive ? false : active,
+      is_active: forcedInactive ? false : active && canActivate,
     };
     const result = product
       ? await supabase.from("products").update(payload).eq("id", product.id)
@@ -407,10 +454,17 @@ function ProductForm({
           />
         )}
         {stationery ? (
-          <p className="rounded-md border border-line bg-surface-1 p-3 text-sm text-ink-base sm:col-span-2" data-testid="stationery-note">
-            <strong className="text-ink-strong">Papelería:</strong> los precios de estos productos se configuran con otro sistema.
-            No se piden precio de menudeo, de mayoreo ni cantidad mínima.
-          </p>
+          editingStationery &&
+          (tiersLoaded ? (
+            <PriceTiersTable
+              rows={tiers}
+              onChange={setTiers}
+              unitWord={unit === "PACKAGE" ? "paquete" : unit === "M2" ? "m²" : "pieza"}
+              disabled={saving}
+            />
+          ) : (
+            <Spinner label="Cargando precios…" />
+          ))
         ) : (
         <>
         <TextField label="Precio menudeo" help={`Precio normal ${perUnitText(unit)}.`} inputMode="decimal" value={retail} onChange={(e) => setRetail(e.target.value)} disabled={saving} required />
@@ -426,20 +480,22 @@ function ProductForm({
         </>
         )}
       </div>
-      <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
-        <input
-          type="checkbox"
-          className="h-5 w-5 shrink-0"
-          checked={forcedInactive ? false : active}
-          onChange={(e) => setActive(e.target.checked)}
-          disabled={saving || forcedInactive}
-          data-testid="product-active"
-        />
-        Producto activo (visible al capturar pedidos)
-      </label>
-      {forcedInactive && (
+      {!forcedInactive && (
+        <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
+          <input
+            type="checkbox"
+            className="h-5 w-5 shrink-0"
+            checked={active && canActivate}
+            onChange={(e) => setActive(e.target.checked)}
+            disabled={saving || !canActivate}
+            data-testid="product-active"
+          />
+          Producto activo (visible al capturar pedidos)
+        </label>
+      )}
+      {editingStationery && tiersLoaded && !canActivate && (
         <p className="-mt-2 text-xs text-ink-muted" data-testid="stationery-inactive-note">
-          Los productos de papelería se crean inactivos. Podrá activarlo después, editándolo.
+          Agregue al menos una fila de precios para poder activarlo.
         </p>
       )}
       {error && (

@@ -196,6 +196,13 @@ export const rpc = {
   planCuts(items: QuoteItemInput[]) {
     return call<CutPlanLine[]>("plan_cuts", { p_items: items });
   },
+  /** Precios por cantidad (papelería): reemplaza la tabla completa. */
+  setPriceTiers(productId: string, tiers: { max_qty: number | null; price: string }[]) {
+    return call<{ position: number; min_qty: number; max_qty: number | null; price: string }[]>("set_price_tiers", {
+      p_product_id: productId,
+      p_tiers: tiers,
+    });
+  },
   simulateProductCost(productId: string) {
     return call<ProductSimulation>("simulate_product_cost", { p_product_id: productId });
   },
