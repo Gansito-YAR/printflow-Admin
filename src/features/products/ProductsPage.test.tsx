@@ -37,12 +37,16 @@ it("papelería: oculta menudeo, mayoreo y mínimo, y guarda sin precios", async 
   expect(screen.queryByLabelText(/Precio mayoreo/)).toBeNull();
   expect(screen.queryByLabelText(/Cantidad mínima para mayoreo/)).toBeNull();
   expect(screen.getByTestId("stationery-note")).toHaveTextContent("Papelería");
+  // Nace inactivo: la casilla queda desmarcada y bloqueada.
+  expect(screen.getByTestId("product-active")).not.toBeChecked();
+  expect(screen.getByTestId("product-active")).toBeDisabled();
+  expect(screen.getByTestId("stationery-inactive-note")).toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText(/^SKU/), { target: { value: "P-VOL" } });
   fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: "Volantes" } });
   await user.click(screen.getByRole("button", { name: "Guardar" }));
   await waitFor(() => expect(insert).toHaveBeenCalledTimes(1));
   expect(insert.mock.calls[0]![0]).toMatchObject({
-    sku: "P-VOL", category_id: "c-pap", retail_price: null, wholesale_price: null, wholesale_min_qty: null,
+    sku: "P-VOL", category_id: "c-pap", retail_price: null, wholesale_price: null, wholesale_min_qty: null, is_active: false,
   });
 });

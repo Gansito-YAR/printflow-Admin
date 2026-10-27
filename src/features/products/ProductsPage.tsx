@@ -239,6 +239,8 @@ function ProductForm({
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const stationery = isStationery(categories.find((c) => c.id === categoryId)?.name);
+  // Papelería nace inactiva (también lo impone la base); se activa después, editándolo.
+  const forcedInactive = !product && stationery;
 
   async function onCreateCategory() {
     setCreatingCategory(true);
@@ -299,7 +301,7 @@ function ProductForm({
       ...(product ? {} : { pricing_unit: unit }),
       ...prices,
       units_per_package: unitsPerPackage,
-      is_active: active,
+      is_active: forcedInactive ? false : active,
     };
     const result = product
       ? await supabase.from("products").update(payload).eq("id", product.id)
@@ -425,9 +427,21 @@ function ProductForm({
         )}
       </div>
       <label className="flex min-h-11 items-center gap-3 text-sm text-ink-strong md:min-h-0 md:gap-2">
-        <input type="checkbox" className="h-5 w-5 shrink-0" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={saving} />
+        <input
+          type="checkbox"
+          className="h-5 w-5 shrink-0"
+          checked={forcedInactive ? false : active}
+          onChange={(e) => setActive(e.target.checked)}
+          disabled={saving || forcedInactive}
+          data-testid="product-active"
+        />
         Producto activo (visible al capturar pedidos)
       </label>
+      {forcedInactive && (
+        <p className="-mt-2 text-xs text-ink-muted" data-testid="stationery-inactive-note">
+          Los productos de papelería se crean inactivos. Podrá activarlo después, editándolo.
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-sm font-semibold text-blocked-ink">
           [!] {error}
